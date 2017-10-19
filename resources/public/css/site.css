@@ -1,0 +1,73 @@
+.body-container {
+  font-family: 'Helvetica Neue', Verdana, Helvetica, Arial, sans-serif;
+  max-width: 800px;
+  margin: 0 auto;
+  padding-top: 72px;
+  -webkit-font-smoothing: antialiased;
+  font-size: 1.125em;
+  color: #333;
+  line-height: 1.5em;
+}
+
+h1, h2, h3 {
+  color: #000;
+}
+h1 {
+  font-size: 2.5em
+}
+
+h2 {
+  font-size: 2em
+}
+
+h3 {
+  font-size: 1.5em
+}
+
+a {
+  text-decoration: none;
+  color: #09f;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+pre {
+  margin: 0;
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+code.hljs {
+  padding: 0.1rem 0.5rem;
+}
+
+.block {
+  margin-bottom: 1.5rem;
+}
+
+.CodeMirror {
+  height: auto;
+  line-height: 1.5;
+  border: 1px solid lightgray;
+}
+
+.code-result {
+  border: 1px solid lightgray;
+  margin-top: -1px;
+}
+  .code-result__out {
+    background: #f0f0f0;
+    color: green;
+  }
+  .code-result__var {
+    color: deeppink;
+  }
+  .code-result__error {
+    color: firebrick;
+  }
+
+.graph {
+  margin: 1rem;
+}
