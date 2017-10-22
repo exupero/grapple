@@ -39,11 +39,8 @@ pre {
   line-height: 1.5;
 }
 
-code.hljs {
-  padding: 0.1rem 0.5rem;
-}
-
 .block {
+  position: relative;
   margin-bottom: 1.5rem;
 }
 
@@ -56,18 +53,43 @@ code.hljs {
 .code-result {
   border: 1px solid lightgray;
   margin-top: -1px;
+  font-size: 14.625px;
+  font-family: monospace;
+  padding: 0.3rem 0.5rem;
 }
-  .code-result__out {
+  .code-result__print {
     background: #f0f0f0;
     color: green;
-  }
-  .code-result__var {
-    color: deeppink;
   }
   .code-result__error {
     color: firebrick;
   }
+  .code-result__var {
+    color: deeppink;
+  }
+  .code-result__nil {
+    color: #3a3;
+  }
+  .code-result__number {
+    color: #3a3;
+  }
+  .code-result__string {
+    color: #a22;
+  }
+  .code-result__keyword {
+    color: #3a3;
+  }
+  .code-result__collection {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+  }
 
-.graph {
+graph {
   margin: 1rem;
+}
+
+.cm-s-neat .CodeMirror-matchingbracket {
+  background-color: powderblue;
+  outline: none;
 }

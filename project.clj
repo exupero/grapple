@@ -21,9 +21,9 @@
                  [com.cognitect/transit-cljs "0.8.243"]
                  [com.lucasbradstreet/cljs-uuid-utils "1.0.2"]
                  [cheshire "5.8.0"]
+                 [cider/cider-nrepl "0.15.1"]
                  [cljsjs/codemirror "5.24.0-1"]
-                 [cljsjs/vega "3.0.1-0"]
-                 [cljsjs/highlight "9.12.0-0"]]
+                 [cljsjs/vega "3.0.1-0"]]
 
   :plugins [[lein-environ "1.0.2"]
             [lein-cljsbuild "1.1.5"]
