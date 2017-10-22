@@ -22,6 +22,7 @@
                  [com.lucasbradstreet/cljs-uuid-utils "1.0.2"]
                  [cheshire "5.8.0"]
                  [cider/cider-nrepl "0.15.1"]
+                 [markdown-clj "1.0.1"]
                  [cljsjs/codemirror "5.24.0-1"]
                  [cljsjs/vega "3.0.1-0"]]
 

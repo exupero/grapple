@@ -6,6 +6,7 @@
             [ajax.core :as http]
             cljsjs.codemirror
             cljsjs.codemirror.mode.clojure
+            cljsjs.codemirror.mode.markdown
             cljsjs.codemirror.addon.edit.closebrackets
             cljsjs.codemirror.addon.edit.matchbrackets
             grapple.vega))
@@ -39,6 +40,9 @@
 
 (rf/reg-fx
   :codemirror/init
-  (fn [{:keys [codemirror/node codemirror/config codemirror/on-success]}]
+  (fn [{:keys [codemirror/node codemirror/config codemirror/focus? codemirror/on-success]}]
     (let [cm (js/CodeMirror.fromTextArea node (clj->js config))]
+      (when focus?
+        (.focus cm)
+        (.setCursor cm (.lineCount cm) 0))
       (on-success cm))))

@@ -14,6 +14,11 @@
     (assoc cofx :generated/ns-name (generate-ns-name))))
 
 (rf/reg-cofx
+  :generator/uuid
+  (fn [cofx _]
+    (assoc cofx :generator/uuid uuid/make-random-uuid)))
+
+(rf/reg-cofx
   :generate/uuid
   (fn [cofx _]
     (assoc cofx :generated/uuid (uuid/make-random-uuid))))

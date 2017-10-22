@@ -9,30 +9,6 @@
   line-height: 1.5em;
 }
 
-h1, h2, h3 {
-  color: #000;
-}
-h1 {
-  font-size: 2.5em
-}
-
-h2 {
-  font-size: 2em
-}
-
-h3 {
-  font-size: 1.5em
-}
-
-a {
-  text-decoration: none;
-  color: #09f;
-}
-
-a:hover {
-  text-decoration: underline;
-}
-
 pre {
   margin: 0;
   white-space: pre-wrap;
@@ -58,8 +34,6 @@ pre {
   padding: 0.3rem 0.5rem;
 }
   .code-result__print {
-    background: #f0f0f0;
-    color: green;
   }
   .code-result__error {
     color: firebrick;
