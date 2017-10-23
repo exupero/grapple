@@ -6,23 +6,18 @@
             [markdown.core :refer [md->html]]
             grapple.render))
 
-(defn codemirror [id block-type _]
+(defn codemirror [block]
   (let [textarea (r/atom nil)]
     (r/create-class
       {:reagent-render
-       (fn [id _ code]
+       (fn [{:keys [block/content]}]
          [:div
           [:textarea {:ref #(reset! textarea %)
-                      :default-value code
+                      :default-value content
                       :style {:display "none"}}]])
        :component-did-mount
        (fn [this]
-         (rf/dispatch [:codemirror/init id block-type @textarea]))})))
-
-(defn highlight-block [node]
-  (let [blocks (array-seq (.querySelectorAll node "pre code"))]
-    (doseq [block blocks]
-      (js/hljs.highlightBlock block))))
+         (rf/dispatch [:codemirror/init block @textarea]))})))
 
 (defn code-result [{:keys [value evaled out err]}]
   (cond
@@ -32,21 +27,12 @@
     (and (string? value) (string/starts-with? value "#'")) (grapple.render/->VarName value)))
 
 (defn code-results [results]
-  (r/create-class
-    {:reagent-render
-     (fn [results]
-       [:div.code-result
-        (for [[i {:keys [status] :as result}] (map-indexed vector results)
-              :while (not (= status ["done"]))]
-          (with-meta
-            (grapple.render/render (code-result result))
-            {:key i}))])
-     :component-did-mount
-     (fn [this]
-       (highlight-block (r/dom-node this)))
-     :component-did-update
-     (fn [this]
-       (highlight-block (r/dom-node this)))}))
+  [:div.code-result
+   (for [[i {:keys [status] :as result}] (map-indexed vector results)
+         :while (not (= status ["done"]))]
+     (with-meta
+       (grapple.render/render (code-result result))
+       {:key i}))])
 
 (defn markdown []
   (let [clickable-links
@@ -67,19 +53,23 @@
 
 (defmulti block (fn [type _] type))
 
-(defmethod block :block-type/clojure [_ {block-type :block/type :keys [block/id block/content block/results]}]
-  [:div.block.block--clojure {:key id}
-   ^{:key "code"} [codemirror id block-type content]
+(defmethod block :block-type/clojure [_ {:keys [block/id block/content block/results block/active?] :as block}]
+  [:div.block.block--clojure
+   {:key id
+    :className (when active? "block--active")}
+   ^{:key "code"} [codemirror block]
    (when results
      ^{:key "results"} [code-results results])])
 
-(defmethod block :block-type/markdown [_ {block-type :block/type :keys [block/id block/content block/mode]}]
-  [:div.block.block--markdown {:key id}
+(defmethod block :block-type/markdown [_ {:keys [block/id block/content block/mode block/active?] :as block}]
+  [:div.block.block--markdown
+   {:key id
+    :className (when active? "block--active")}
    (if (= mode :block-mode/render)
      [markdown id content]
-     [codemirror id block-type content])])
+     [codemirror block])])
 
-(defn notebook []
+(defn page []
   [:div
    [:div.blocks
     (for [[id {block-type :block/type :as block-data}] @(rf/subscribe [:page/blocks])

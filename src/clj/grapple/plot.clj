@@ -7,8 +7,8 @@
   (let [id (str (UUID/randomUUID))]
     (->Vega
       {:$schema "https://vega.github.io/schema/vega/v3.0.json"
-       :width 300
-       :height 300
+       :width 250
+       :height 250
        :data [{:name id
                :values (map (fn [[x y]] {:x x :y y}) pairs)}]
        :axes [{:scale "x" :domain true :labels true :orient "bottom"}

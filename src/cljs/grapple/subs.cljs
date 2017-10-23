@@ -5,4 +5,9 @@
 (rf/reg-sub
   :page/blocks
   (fn [db _]
-    (sort-by (comp :order val) (:page/blocks db))))
+    (sort-by (comp :order val) (db :page/blocks))))
+
+(rf/reg-sub
+  :page/show-modal?
+  (fn [db _]
+    (db :page/show-modal?)))

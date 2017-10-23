@@ -36,14 +36,17 @@
   (render [_]
     [:span.code-result__nil "nil"])
   number
-  (render [x]
-    [:span.code-result__number x])
+  (render [this]
+    [:span.code-result__number this])
   string
-  (render [s]
-    [:span.code-result__string (pr-str s)])
+  (render [this]
+    [:span.code-result__string (pr-str this)])
   cljs.core/Keyword
   (render [this]
-    [:span.code-result__keyword (str this)])
+    [:span.code-result__keyword (pr-str this)])
+  cljs.core/Symbol
+  (render [this]
+    [:span.code-result__symbol (pr-str this)])
   cljs.core/EmptyList
   (render [this]
     [:span.code-result__collection "()"])

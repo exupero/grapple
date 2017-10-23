@@ -40,9 +40,23 @@
 
 (rf/reg-fx
   :codemirror/init
-  (fn [{:keys [codemirror/node codemirror/config codemirror/focus? codemirror/on-success]}]
+  (fn [{:keys [codemirror/id codemirror/node codemirror/config
+               codemirror/focus? codemirror/on-success]}]
     (let [cm (js/CodeMirror.fromTextArea node (clj->js config))]
+      (.on cm "focus" #(rf/dispatch [:blocks/activate id]))
       (when focus?
         (.focus cm)
         (.setCursor cm (.lineCount cm) 0))
       (on-success cm))))
+
+(rf/reg-fx
+  :codemirror/focus
+  (fn [{cm :focus/codemirror :keys [focus/position]}]
+    (when cm
+      (.focus cm)
+      (condp = position
+        :line/start (.setCursor cm 0 0)
+        :line/end (let [last-line (dec (.lineCount cm))
+                        last-ch (.-length (.getLine cm last-line))]
+                    (.setCursor cm last-line last-ch))
+        :line/default nil))))

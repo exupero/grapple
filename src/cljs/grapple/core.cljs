@@ -12,7 +12,7 @@
 ;; Initialize app
 
 (defn mount-root []
-  (r/render [grapple.views/notebook] (.getElementById js/document "app")))
+  (r/render [grapple.views/page] (.getElementById js/document "app")))
 
 (defn init! []
   (rf/dispatch-sync [:page/init])
