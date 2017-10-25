@@ -55,8 +55,21 @@
     (when cm
       (.focus cm)
       (condp = position
-        :line/start (.setCursor cm 0 0)
-        :line/end (let [last-line (dec (.lineCount cm))
-                        last-ch (.-length (.getLine cm last-line))]
-                    (.setCursor cm last-line last-ch))
-        :line/default nil))))
+        :line/start (.execCommand cm "goDocStart")
+        :line/end (.execCommand cm "goDocEnd")
+        nil))))
+
+(rf/reg-fx
+  :page/save
+  (fn [{:keys [save/filename save/blocks save/on-success]}]
+    (http/POST "/api/save"
+               {:params {:filename filename :blocks blocks}
+                :headers {"X-CSRF-Token" js/antiForgeryToken}
+                :handler on-success})))
+
+(rf/reg-fx
+  :action/defer
+  (fn [{:keys [defer/message defer/seconds]}]
+    (js/setTimeout
+      #(rf/dispatch message)
+      (* seconds 1000))))

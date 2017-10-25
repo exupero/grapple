@@ -4,10 +4,15 @@
 
 (rf/reg-sub
   :page/blocks
-  (fn [db _]
-    (sort-by (comp :order val) (db :page/blocks))))
+  (fn [{:keys [page/blocks page/block-order]} _]
+    (map blocks block-order)))
 
 (rf/reg-sub
-  :page/show-modal?
-  (fn [db _]
-    (db :page/show-modal?)))
+  :page/show-save-modal?
+  (fn [{:keys [page/show-save-modal?]} _]
+    show-save-modal?))
+
+(rf/reg-sub
+  :page/flash
+  (fn [{:keys [page/flash]} _]
+    flash))

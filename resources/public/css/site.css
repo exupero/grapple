@@ -12,15 +12,77 @@ h1 {
   font-size: 20pt;
 }
 
+h3 {
+  margin: 0;
+}
+
 pre {
   margin: 0;
   white-space: pre-wrap;
   line-height: 1.5;
 }
 
+input {
+  width: 100%;
+  font-size: 12pt;
+  padding: 0.3rem 0.5rem;
+  box-sizing: border-box;
+}
+
+button {
+  padding: 0.5rem 0.8rem;
+  font-size: 12pt;
+  background: blue;
+  color: white;
+  border: none;
+  border-radius: 0.3rem;
+}
+
+.flash {
+  position: fixed;
+  width: 600px;
+  margin: 0 100px;
+  z-index: 0;
+  font-weight: bold;
+  color: steelblue;
+  font-size: 16pt;
+  text-align: center;
+  opacity: 0;
+  -webkit-opacity: 0;
+  -moz-opacity: 0;
+  -ms-opacity: 0;
+  transition: opacity 0.2s;
+  -webkit-transition: opacity 0.2s;
+  -moz-transition: opacity 0.2s;
+  -ms-transition: opacity 0.2s;
+}
+  .flash--on {
+    opacity: 1;
+    -webkit-opacity: 1;
+    -moz-opacity: 1;
+    -ms-opacity: 1;
+    z-index: 2;
+  }
+
+.modal {
+  background: lightgray;
+  position: fixed;
+  width: 600px;
+  margin: 0 100px;
+  z-index: 1;
+  padding: 1rem;
+  border: 1px solid gray;
+}
+  .modal__button {
+    margin-top: 0.5rem;
+    float: right;
+    display: inline-block;
+  }
+
 .block {
   position: relative;
   margin-bottom: 0.5rem;
+  z-index: 0;
 }
   .block.block--active .CodeMirror {
     border: 1px solid hotpink;

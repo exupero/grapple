@@ -58,10 +58,17 @@
              :id eval-id})
           doall)))))
 
+(defn save-notebook [req]
+  (let [rdr (transit/reader (req :body) :json)
+        {:keys [filename blocks]} (transit/read rdr)]
+    (spit (str "./" filename) (pr-str blocks))
+    (transit-response {})))
+
 (defroutes routes
   (GET "/" [] (notebook-page))
   (POST "/api/init" req (nrepl-init-endpoint req))
   (POST "/api/eval" req (nrepl-eval-endpoint req))
+  (POST "/api/save" req (save-notebook req))
   
   (resources "/")
   (not-found "Not Found"))

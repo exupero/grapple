@@ -34,7 +34,7 @@
        (grapple.render/render (code-result result))
        {:key i}))])
 
-(defn markdown []
+(defn markdown [id content]
   (let [clickable-links
         (fn [node]
           (doseq [node (array-seq (.querySelectorAll node "a"))]
@@ -69,10 +69,42 @@
      [markdown id content]
      [codemirror block])])
 
+(defn modal [& body]
+  [:div.modal
+   (for [[i child] (map-indexed vector body)]
+     (with-meta child {:key i}))])
+
+(defn save-modal []
+  (let [input (r/atom nil)
+        submit (fn [value]
+                 (rf/dispatch [:page/save-to-filename value]))]
+    (r/create-class
+      {:reagent-render
+       (fn []
+         [modal
+          [:input
+           {:ref #(reset! input %)
+            :type "text"
+            :on-key-up #(when (= "Enter" (.-key %))
+                          (submit (.. % -target -value)))}]
+          [:button.modal__button
+           {:on-click #(submit (.-value @input))}
+           "Save Notebook"]])
+       :component-did-mount
+       (fn [this]
+         (.focus @input))})))
+
 (defn page []
   [:div
-   [:div.blocks
-    (for [[id {block-type :block/type :as block-data}] @(rf/subscribe [:page/blocks])
+   (let [{:keys [flash/text flash/on]} @(rf/subscribe [:page/flash])]
+     [:div.flash
+      {:key "flash"
+       :class [(when on "flash--on")]}
+      text])
+   (when @(rf/subscribe [:page/show-save-modal?])
+     ^{:key "modal"} [save-modal])
+   [:div.blocks {:key "blocks"}
+    (for [{block-type :block/type :keys [block/id] :as block-data} @(rf/subscribe [:page/blocks])
           :let [block-data (assoc block-data :block/id id)]]
       (with-meta
         (block block-type block-data)
