@@ -1,6 +1,7 @@
 (ns grapple.handler
   (:require [clojure.tools.nrepl :as nrepl]
             [clojure.tools.nrepl.server :refer [start-server default-handler]]
+            [clojure.edn :as edn]
             [compojure.core :refer [GET POST defroutes]]
             [compojure.route :refer [not-found resources]]
             [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
@@ -8,7 +9,8 @@
             [config.core :refer [env]]
             [cognitect.transit :as transit]
             [cider.nrepl :as cider]
-            [grapple.middleware :refer [wrap-middleware]])
+            [grapple.middleware :refer [wrap-middleware]]
+            grapple.plot)
   (:import [java.io ByteArrayOutputStream]))
 
 (def mount-target
@@ -29,6 +31,7 @@
     (head)
     [:body {:class "body-container"}
      mount-target
+     (include-js "//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML")
      (include-js "/js/app.js")]))
 
 (defn transit-response [body]
@@ -64,11 +67,20 @@
     (spit (str "./" filename) (pr-str blocks))
     (transit-response {})))
 
+(defn load-notebook [req]
+  (let [rdr (transit/reader (req :body) :json)
+        {:keys [filename]} (transit/read rdr)
+        blocks (edn/read-string
+                 {'grapple.plot.Vega grapple.plot/->Vega}
+                 (slurp (str "./" filename)))]
+    (transit-response blocks)))
+
 (defroutes routes
   (GET "/" [] (notebook-page))
   (POST "/api/init" req (nrepl-init-endpoint req))
   (POST "/api/eval" req (nrepl-eval-endpoint req))
   (POST "/api/save" req (save-notebook req))
+  (POST "/api/load" req (load-notebook req))
   
   (resources "/")
   (not-found "Not Found"))

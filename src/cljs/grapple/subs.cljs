@@ -13,6 +13,11 @@
     show-save-modal?))
 
 (rf/reg-sub
+  :page/show-load-modal?
+  (fn [{:keys [page/show-load-modal?]} _]
+    show-load-modal?))
+
+(rf/reg-sub
   :page/flash
   (fn [{:keys [page/flash]} _]
     flash))

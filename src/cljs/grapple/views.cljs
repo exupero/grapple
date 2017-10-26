@@ -4,6 +4,7 @@
             [reagent.core :as r]
             [re-frame.core :as rf]
             [markdown.core :refer [md->html]]
+            markdown.transformers
             grapple.render))
 
 (defn codemirror [block]
@@ -19,7 +20,7 @@
        (fn [this]
          (rf/dispatch [:codemirror/init block @textarea]))})))
 
-(defn code-result [{:keys [value evaled out err]}]
+(defn code-result [{:keys [value result/evaled out err]}]
   (cond
     evaled evaled
     err (grapple.render/->Error err)
@@ -34,26 +35,32 @@
        (grapple.render/render (code-result result))
        {:key i}))])
 
+(def markdown-transformers
+  (remove #(= markdown.transformers/superscript %)
+          markdown.transformers/transformer-vector))
+
 (defn markdown [id content]
-  (let [clickable-links
+  (let [rerender
         (fn [node]
+          (js/MathJax.Hub.Queue #js ["Typeset" js/MathJax.Hub node])
           (doseq [node (array-seq (.querySelectorAll node "a"))]
             (.addEventListener node "click" #(.stopPropagation %))))]
     (r/create-class
       {:reagent-render
        (fn [id content]
-         [:div {:dangerouslySetInnerHTML {:__html (md->html content)}
-                :on-click #(rf/dispatch [:block/edit id])}])
+         (let [html (md->html content :replacement-transformers markdown-transformers)]
+           [:div {:dangerouslySetInnerHTML {:__html html}
+                  :on-click #(rf/dispatch [:block/edit id])}]))
        :component-did-mount
        (fn [this]
-         (clickable-links (r/dom-node this)))
+         (rerender (r/dom-node this)))
        :component-did-update
        (fn [this]
-         (clickable-links (r/dom-node this)))})))
+         (rerender (r/dom-node this)))})))
 
-(defmulti block (fn [type _] type))
+(defmulti block :block/type)
 
-(defmethod block :block-type/clojure [_ {:keys [block/id block/content block/results block/active?] :as block}]
+(defmethod block :block-type/clojure [{:keys [block/id block/content block/results block/active?] :as block}]
   [:div.block.block--clojure
    {:key id
     :className (when active? "block--active")}
@@ -61,13 +68,13 @@
    (when results
      ^{:key "results"} [code-results results])])
 
-(defmethod block :block-type/markdown [_ {:keys [block/id block/content block/mode block/active?] :as block}]
+(defmethod block :block-type/markdown [{:keys [block/id block/content block/active?] :as block}]
   [:div.block.block--markdown
    {:key id
     :className (when active? "block--active")}
-   (if (= mode :block-mode/render)
-     [markdown id content]
-     [codemirror block])])
+   (if active?
+     [codemirror block]
+     [markdown id content])])
 
 (defn modal [& body]
   [:div.modal
@@ -94,18 +101,40 @@
        (fn [this]
          (.focus @input))})))
 
+(defn load-modal []
+  (let [input (r/atom nil)
+        submit (fn [value]
+                 (rf/dispatch [:page/load-from-filename value]))]
+    (r/create-class
+      {:reagent-render
+       (fn []
+         [modal
+          [:input
+           {:ref #(reset! input %)
+            :type "text"
+            :on-key-up #(when (= "Enter" (.-key %))
+                          (submit (.. % -target -value)))}]
+          [:button.modal__button
+           {:on-click #(submit (.-value @input))}
+           "Load Notebook"]])
+       :component-did-mount
+       (fn [this]
+         (.focus @input))})))
+
 (defn page []
   [:div
-   (let [{:keys [flash/text flash/on]} @(rf/subscribe [:page/flash])]
-     [:div.flash
-      {:key "flash"
-       :class [(when on "flash--on")]}
-      text])
-   (when @(rf/subscribe [:page/show-save-modal?])
-     ^{:key "modal"} [save-modal])
+   [:div {:key "modals-and-flash"}
+    (let [{:keys [flash/text flash/on]} @(rf/subscribe [:page/flash])]
+      [:div.flash
+       {:key "flash"
+        :class [(when on "flash--on")]}
+       text])
+    (when @(rf/subscribe [:page/show-save-modal?])
+      ^{:key "save-modal"} [save-modal])
+    (when @(rf/subscribe [:page/show-load-modal?])
+      ^{:key "load-modal"} [load-modal])]
    [:div.blocks {:key "blocks"}
-    (for [{block-type :block/type :keys [block/id] :as block-data} @(rf/subscribe [:page/blocks])
-          :let [block-data (assoc block-data :block/id id)]]
+    (for [{:keys [block/id] :as block-data} @(rf/subscribe [:page/blocks])]
       (with-meta
-        (block block-type block-data)
+        (block block-data)
         {:key id}))]])

@@ -1,7 +1,6 @@
 (ns grapple.effects
   (:require-macros [grapple.util :refer [spy]])
-  (:require [cljs.reader :as edn]
-            [cognitect.transit :as transit]
+  (:require [cognitect.transit :as transit]
             [re-frame.core :as rf]
             [ajax.core :as http]
             cljsjs.codemirror
@@ -9,20 +8,16 @@
             cljsjs.codemirror.mode.markdown
             cljsjs.codemirror.addon.edit.closebrackets
             cljsjs.codemirror.addon.edit.matchbrackets
-            grapple.vega))
-
-(def custom-readers
-  {'grapple.plot.Vega (fn [{:keys [spec]}]
-                        (grapple.vega/->Vega spec))})
+            [grapple.evaluate :refer [write-handlers]]))
 
 (rf/reg-fx
   :clojure/init
   (fn [{:keys [init/on-success]}]
     (http/POST "/api/init"
                {:headers {"X-CSRF-Token" js/antiForgeryToken}
-                :handler (fn [resp]
-                           (let [session-id (transit/read (transit/reader :json) resp)]
-                             (on-success session-id)))})))
+                :response-format :transit
+                :handler (fn [session-id]
+                           (on-success session-id))})))
 
 (rf/reg-fx
   :clojure/eval
@@ -30,13 +25,8 @@
     (http/POST "/api/eval"
                {:params {:code code :session-id session-id :eval-id eval-id}
                 :headers {"X-CSRF-Token" js/antiForgeryToken}
-                :handler (fn [resp]
-                           (let [results (map (fn [{:keys [value] :as result}]
-                                                (if value
-                                                  (assoc result :evaled (edn/read-string {:readers custom-readers} value))
-                                                  result))
-                                              (transit/read (transit/reader :json) resp))]
-                             (on-success results)))})))
+                :response-format :transit
+                :handler on-success})))
 
 (rf/reg-fx
   :codemirror/init
@@ -65,6 +55,16 @@
     (http/POST "/api/save"
                {:params {:filename filename :blocks blocks}
                 :headers {"X-CSRF-Token" js/antiForgeryToken}
+                :writer (transit/writer :json {:handlers write-handlers})
+                :handler on-success})))
+
+(rf/reg-fx
+  :page/load
+  (fn [{:keys [load/filename load/on-success]}]
+    (http/POST "/api/load"
+               {:params {:filename filename}
+                :headers {"X-CSRF-Token" js/antiForgeryToken}
+                :response-format :transit
                 :handler on-success})))
 
 (rf/reg-fx

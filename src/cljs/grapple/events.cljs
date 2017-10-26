@@ -5,12 +5,12 @@
             [re-frame.core :as rf]
             [cljs-uuid-utils.core :as uuid]
             cljsjs.codemirror
-            [grapple.nav :as nav]))
+            [grapple.nav :as nav]
+            [grapple.evaluate :as evaluate]))
 
 (def template-markdown-block
   {:block/type :block-type/markdown
    :block/content ""
-   :block/mode :block-mode/render
    :block/active? false})
 
 (def template-clojure-block
@@ -106,10 +106,10 @@
             db (-> db
                  (update-in [:page/blocks id] merge {:block/eval-id eval-id
                                                      :block/content content})
-                 (nav/guarantee-empty-block template-clojure-block (generate-uuid)))
+                 (nav/ensure-next-block id template-clojure-block (generate-uuid)))
             focus-block (nav/block-after db id)]
-        {:db (assoc-in db [:page/blocks (:block/id focus-block) :block/active?] true)
-         :codemirror/focus (:block/codemirror focus-block)
+        {:db (nav/activate db (:block/id focus-block))
+         :codemirror/focus {:focus/codemirror (:block/codemirror focus-block)}
          :clojure/eval {:eval/code content
                         :eval/session-id (db :page/session-id)
                         :eval/eval-id (uuid/uuid-string uuid)
@@ -122,20 +122,23 @@
   :block/render
   [(rf/inject-cofx :generator/uuid)]
   (fn [{:keys [db] generate-uuid :generator/uuid} [_ id content]]
-    {:db (-> db
-           (update-in [:page/blocks id] merge {:block/content content
-                                               :block/mode :block-mode/render})
-           (nav/guarantee-empty-block template-clojure-block (generate-uuid)))}))
+    (let [db (-> db
+               (assoc-in [:page/blocks id :block/content] content)
+               (nav/ensure-next-block id template-clojure-block (generate-uuid)))
+          focus-block (nav/block-after db id)]
+      {:codemirror/focus {:focus/codemirror (:block/codemirror focus-block)}
+       :db (nav/activate db (:block/id focus-block))})))
 
 (rf/reg-event-db
   :block/results
   (fn [db [_ id results]]
-    (assoc-in db [:page/blocks id :block/results] results)))
+    (assoc-in db [:page/blocks id :block/results]
+              (evaluate/results-with-evaled results))))
 
 (rf/reg-event-fx
   :block/edit
   (fn [{:keys [db]} [_ id]]
-    {:db (update-in db [:page/blocks id] merge {:block/mode :block-mode/edit :block/active? true})}))
+    {:db (assoc-in db [:page/blocks id :block/active?] true)}))
 
 (rf/reg-event-fx
   :block/commands
@@ -145,26 +148,23 @@
 (rf/reg-event-db
   :blocks/activate
   (fn [db [_ id]]
-    (-> db
-      (update :page/blocks
-              (fn [blocks]
-                (into {}
-                      (map (fn [[k v]]
-                             [k (assoc v :block/active? false)]))
-                      blocks)))
-      (assoc-in [:page/blocks id :block/active?] true))))
+    (nav/activate db id)))
 
 (rf/reg-event-fx
   :blocks/focus-previous
   (fn [{:keys [db]} [_ id pos]]
-    {:codemirror/focus {:focus/codemirror (-> db (nav/block-before id) :block/codemirror)
-                        :focus/position pos}}))
+    (let [{:keys [block/id block/codemirror]} (nav/block-before db id)]
+      {:codemirror/focus {:focus/codemirror codemirror
+                          :focus/position pos}
+       :db (nav/activate db id)})))
 
 (rf/reg-event-fx
   :blocks/focus-next
   (fn [{:keys [db]} [_ id pos]]
-    {:codemirror/focus {:focus/codemirror (-> db (nav/block-after id) :block/codemirror)
-                        :focus/position pos}}))
+    (let [block-after (nav/block-after db id)]
+      {:codemirror/focus {:focus/codemirror (:block/codemirror block-after)
+                          :focus/position pos}
+       :db (nav/activate db (:block/id block-after))})))
 
 (rf/reg-event-fx
   :block/insert-new-before
@@ -225,7 +225,11 @@
   (sequence
     (comp
       (map blocks)
-      (map #(dissoc % :block/codemirror)))
+      (map #(dissoc % :block/codemirror))
+      (map (fn [x]
+             (update x :block/results
+                     (fn [results]
+                       (map #(dissoc % :result/evaled) results))))))
     block-order))
 
 (defn update-block-contents [blocks]
@@ -244,7 +248,7 @@
         {:page/save {:save/filename filename
                      :save/blocks (savable-blocks db)
                      :save/on-success (fn []
-                                        (rf/dispatch [:page/flash "Saved"])
+                                        (rf/dispatch [:page/flash (str "Saved " filename)])
                                         (rf/dispatch [:page/hide-save-modal]))}}
         {:db (assoc db :page/show-save-modal? true)}))))
 
@@ -262,14 +266,43 @@
       {:page/save {:save/filename filename
                    :save/blocks (savable-blocks db)
                    :save/on-success (fn []
-                                      (rf/dispatch [:page/flash "Saved"])
+                                      (rf/dispatch [:page/flash (str "Saved " filename)])
                                       (rf/dispatch [:page/hide-save-modal]))}
        :db (assoc db :page/filename filename)})))
+
+(rf/reg-event-db
+  :page/load
+  (fn [db _]
+    (assoc db :page/show-load-modal? true)))
+
+(rf/reg-event-fx
+  :page/load-from-filename
+  (fn [{:keys [db]} [_ filename]]
+    {:page/load {:load/filename filename
+                 :load/on-success (fn [blocks]
+                                    (rf/dispatch [:page/flash (str "Loaded " filename)])
+                                    (rf/dispatch [:page/load-blocks blocks])
+                                    (rf/dispatch [:page/hide-load-modal]))}}))
+
+(rf/reg-event-db
+  :page/load-blocks
+  (fn [db [_ blocks]]
+    (assoc db
+           :page/block-order (map :block/id blocks)
+           :page/blocks (into {}
+                              (map (fn [{:keys [block/id block/results] :as block}]
+                                     [id (update block :block/results evaluate/results-with-evaled)]))
+                              blocks))))
 
 (rf/reg-event-db
   :page/hide-save-modal
   (fn [db _]
     (assoc db :page/show-save-modal? false)))
+
+(rf/reg-event-db
+  :page/hide-load-modal
+  (fn [db _]
+    (assoc db :page/show-load-modal? false)))
 
 (rf/reg-event-fx
   :page/flash

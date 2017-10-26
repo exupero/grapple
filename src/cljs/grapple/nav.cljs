@@ -54,15 +54,6 @@
   (let [sel (.findWordAt cm (.getCursor cm))]
     (.getRange cm (.-anchor sel) (.-head sel))))
 
-(defn guarantee-empty-block [db new-block-template new-uuid]
-  (let [end (get (db :page/blocks) (last (db :page/block-order)))]
-    (if (= "" (:block/content end))
-      db
-      (let [new-block (assoc new-block-template :block/id new-uuid :block/active? true)]
-        (-> db
-          (update :page/blocks assoc new-uuid new-block)
-          (update :page/block-order conj new-uuid))))))
-
 (defn node-or-nil [loc]
   (when loc
     (zip/node loc)))
@@ -83,6 +74,14 @@
          zip/right
          node-or-nil)))
 
+(defn ensure-next-block [db id new-block-template new-uuid]
+  (if-let [next-block (block-after db id)]
+    db
+    (let [new-block (assoc new-block-template :block/id new-uuid :block/active? true)]
+      (-> db
+        (update :page/blocks assoc new-uuid new-block)
+        (update :page/block-order conj new-uuid)))))
+
 (defn insert-new-block [new-block-template f]
   (fn [{:keys [db] generate-uuid :generator/uuid} [_ id]]
     (let [new-uuid (generate-uuid)
@@ -90,3 +89,13 @@
       {:db (-> db
              (update :page/blocks assoc new-uuid new-block)
              (update :page/block-order f id new-uuid))})))
+
+(defn activate [db id]
+  (-> db
+    (update :page/blocks
+            (fn [blocks]
+              (into {}
+                    (map (fn [[k v]]
+                           [k (assoc v :block/active? false)]))
+                    blocks)))
+    (assoc-in [:page/blocks id :block/active?] true)))
