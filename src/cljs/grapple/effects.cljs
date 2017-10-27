@@ -1,8 +1,9 @@
 (ns grapple.effects
   (:require-macros [grapple.util :refer [spy]])
-  (:require [cognitect.transit :as transit]
-            [re-frame.core :as rf]
+  (:require [re-frame.core :as rf]
             [ajax.core :as http]
+            [taoensso.sente :as sente]
+            [taoensso.sente.packers.transit :as sente-transit]
             cljsjs.codemirror
             cljsjs.codemirror.mode.clojure
             cljsjs.codemirror.mode.markdown
@@ -10,23 +11,49 @@
             cljsjs.codemirror.addon.edit.matchbrackets
             [grapple.evaluate :refer [write-handlers]]))
 
+(def packer (sente-transit/->TransitPacker :json {:handlers write-handlers} {}))
+(defonce channel-socket (sente/make-channel-socket! "/ws" {:type :auto :packer packer}))
+(defonce chsk       (channel-socket :chsk))
+(defonce ch-chsk    (channel-socket :ch-recv))
+(defonce chsk-send! (channel-socket :send-fn))
+(defonce chsk-state (channel-socket :state))
+
+(defmulti event-msg-handler :id)
+
+(defmethod event-msg-handler :chsk/handshake [{:keys [?data]}]
+  (rf/dispatch [:clojure/init]))
+
+(defmethod event-msg-handler :chsk/recv [{:keys [id ?data]}]
+  (let [[event data] ?data]
+    (condp = event
+      :eval/result (rf/dispatch [:eval/result data]))))
+
+(defmethod event-msg-handler :chsk/state [_])
+
+(rf/reg-fx
+  :ws/init
+  (fn [_]
+    (sente/start-client-chsk-router! ch-chsk event-msg-handler)))
+
+(rf/reg-fx
+  :mathjax/init
+  (fn [_]
+    (js/MathJax.Hub.Config
+      (clj->js {:messageStyle "none"
+                :showProcessingMessages false
+                :skipStartupTypeset true
+                :tex2jax {:inlineMath [["@@" "@@"]]}}))
+    (js/MathJax.Hub.Configured)))
+
 (rf/reg-fx
   :clojure/init
   (fn [{:keys [init/on-success]}]
-    (http/POST "/api/init"
-               {:headers {"X-CSRF-Token" js/antiForgeryToken}
-                :response-format :transit
-                :handler (fn [session-id]
-                           (on-success session-id))})))
+    (chsk-send! [:clojure/init] js/Number.MAX_SAFE_INTEGER on-success)))
 
 (rf/reg-fx
   :clojure/eval
-  (fn [{:keys [eval/code eval/session-id eval/eval-id eval/on-success]}]
-    (http/POST "/api/eval"
-               {:params {:code code :session-id session-id :eval-id eval-id}
-                :headers {"X-CSRF-Token" js/antiForgeryToken}
-                :response-format :transit
-                :handler on-success})))
+  (fn [{:keys [eval/code eval/session-id eval/eval-id]}]
+    (chsk-send! [:clojure/eval {:code code :session-id session-id :eval-id eval-id}])))
 
 (rf/reg-fx
   :codemirror/init
@@ -52,20 +79,13 @@
 (rf/reg-fx
   :page/save
   (fn [{:keys [save/filename save/blocks save/on-success]}]
-    (http/POST "/api/save"
-               {:params {:filename filename :blocks blocks}
-                :headers {"X-CSRF-Token" js/antiForgeryToken}
-                :writer (transit/writer :json {:handlers write-handlers})
-                :handler on-success})))
+    (chsk-send! [:page/save {:filename filename :blocks blocks}]
+                (* 5 1000) on-success)))
 
 (rf/reg-fx
   :page/load
   (fn [{:keys [load/filename load/on-success]}]
-    (http/POST "/api/load"
-               {:params {:filename filename}
-                :headers {"X-CSRF-Token" js/antiForgeryToken}
-                :response-format :transit
-                :handler on-success})))
+    (chsk-send! [:page/load {:filename filename}] (* 5 1000) on-success)))
 
 (rf/reg-fx
   :action/defer

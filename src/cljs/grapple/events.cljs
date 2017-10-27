@@ -30,11 +30,17 @@
                          {:block/id (generate-uuid)
                           :block/content (str "(ns " generated-ns-name "\n  (:require [grapple.plot :as plot]))")
                           :block/active? true})]]
-      {:clojure/init {:init/on-success #(rf/dispatch [:page/session-id %])}
+      {:ws/init {}
+       :mathjax/init true
        :db {:page/session-id nil
             :page/flash {:flash/text "" :flash/on false}
             :page/block-order (mapv :block/id blocks)
             :page/blocks (into {} (map (juxt :block/id identity)) blocks)}})))
+
+(rf/reg-event-fx
+  :clojure/init
+  (fn [_ _]
+    {:clojure/init {:init/on-success #(rf/dispatch [:page/session-id %])}}))
 
 (rf/reg-event-db
   :page/session-id
@@ -102,21 +108,26 @@
   [(rf/inject-cofx :generator/uuid)]
   (fn [{:keys [db] generate-uuid :generator/uuid} [_ id content]]
     (when-not (string/blank? content)
-      (let [eval-id (uuid/uuid-string uuid)
-            db (-> db
-                 (update-in [:page/blocks id] merge {:block/eval-id eval-id
-                                                     :block/content content})
-                 (nav/ensure-next-block id template-clojure-block (generate-uuid)))
+      (let [db (nav/ensure-next-block db id template-clojure-block (generate-uuid))
             focus-block (nav/block-after db id)]
-        {:db (nav/activate db (:block/id focus-block))
+        {:db (-> db
+               (update-in [:page/blocks id] merge {:block/content content
+                                                   :block/processing? true
+                                                   :block/results []})
+               (nav/activate (:block/id focus-block)))
          :codemirror/focus {:focus/codemirror (:block/codemirror focus-block)}
          :clojure/eval {:eval/code content
                         :eval/session-id (db :page/session-id)
-                        :eval/eval-id (uuid/uuid-string uuid)
-                        :eval/on-success
-                        (fn [forms]
-                          (rf/dispatch [:page/session-id (-> forms first :session)])
-                          (rf/dispatch [:block/results id forms]))}}))))
+                        :eval/eval-id (uuid/uuid-string id)}}))))
+
+(rf/reg-event-db
+  :eval/result
+  (fn [db [_ {:keys [eval-id result]}]]
+    (let [block-id (uuid/make-uuid-from eval-id)
+          db (assoc db :page/session-id (:session result))]
+      (if (= ["done"] (result :status))
+        (assoc-in db [:page/blocks block-id :block/processing?] false)
+        (update-in db [:page/blocks block-id :block/results] conj result)))))
 
 (rf/reg-event-fx
   :block/render

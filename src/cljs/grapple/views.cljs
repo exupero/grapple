@@ -20,7 +20,7 @@
        (fn [this]
          (rf/dispatch [:codemirror/init block @textarea]))})))
 
-(defn code-result [{:keys [value result/evaled out err]}]
+(defn code-result [{:keys [value result/evaled out err] :as result}]
   (cond
     evaled evaled
     err (grapple.render/->Error err)
@@ -28,12 +28,20 @@
     (and (string? value) (string/starts-with? value "#'")) (grapple.render/->VarName value)))
 
 (defn code-results [results]
-  [:div.code-result
-   (for [[i {:keys [status] :as result}] (map-indexed vector results)
-         :while (not (= status ["done"]))]
-     (with-meta
-       (grapple.render/render (code-result result))
-       {:key i}))])
+  (let [out (filter #(contains? % :out) results)
+        values (filter #(contains? % :value) results)]
+    [:div.code-result
+     ^{:key "out"}
+     [:div
+      (for [[i {:keys [status] :as result}] (map-indexed vector out)]
+        (with-meta
+          (grapple.render/render (code-result result))
+          {:key i}))]
+     ^{:key "values"}
+     [:div
+      (for [[i {:keys [status] :as result}] (map-indexed vector values)]
+        ^{:key i}
+        [:div (grapple.render/render (code-result result))])]]))
 
 (def markdown-transformers
   (remove #(= markdown.transformers/superscript %)
@@ -60,14 +68,6 @@
 
 (defmulti block :block/type)
 
-(defmethod block :block-type/clojure [{:keys [block/id block/content block/results block/active?] :as block}]
-  [:div.block.block--clojure
-   {:key id
-    :className (when active? "block--active")}
-   ^{:key "code"} [codemirror block]
-   (when results
-     ^{:key "results"} [code-results results])])
-
 (defmethod block :block-type/markdown [{:keys [block/id block/content block/active?] :as block}]
   [:div.block.block--markdown
    {:key id
@@ -75,6 +75,14 @@
    (if active?
      [codemirror block]
      [markdown id content])])
+
+(defmethod block :block-type/clojure [{:keys [block/id block/content block/results block/active?] :as block}]
+  [:div.block.block--clojure
+   {:key id
+    :className (when active? "block--active")}
+   ^{:key "code"} [codemirror block]
+   (when results
+     ^{:key "results"} [code-results results])])
 
 (defn modal [& body]
   [:div.modal
