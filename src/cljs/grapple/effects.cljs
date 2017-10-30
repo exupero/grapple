@@ -24,9 +24,7 @@
   (rf/dispatch [:clojure/init]))
 
 (defmethod event-msg-handler :chsk/recv [{:keys [id ?data]}]
-  (let [[event data] ?data]
-    (condp = event
-      :eval/result (rf/dispatch [:eval/result data]))))
+  (rf/dispatch ?data))
 
 (defmethod event-msg-handler :chsk/state [_])
 
@@ -54,6 +52,16 @@
   :clojure/eval
   (fn [{:keys [eval/code eval/session-id eval/eval-id]}]
     (chsk-send! [:clojure/eval {:code code :session-id session-id :eval-id eval-id}])))
+
+(rf/reg-fx
+  :clojure/interrupt
+  (fn [{:keys [interrupt/session-id interrupt/eval-id]}]
+    (chsk-send! [:clojure/interrupt {:session-id session-id :eval-id eval-id}])))
+
+(rf/reg-fx
+  :clojure/stacktrace
+  (fn [{:keys [stacktrace/eval-id stacktrace/session-id]}]
+    (chsk-send! [:clojure/stacktrace {:eval-id eval-id :session-id session-id}])))
 
 (rf/reg-fx
   :codemirror/init

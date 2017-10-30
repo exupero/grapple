@@ -11,7 +11,7 @@
   (let [textarea (r/atom nil)]
     (r/create-class
       {:reagent-render
-       (fn [{:keys [block/content]}]
+       (fn [{:keys [block/content block/processing?]}]
          [:div
           [:textarea {:ref #(reset! textarea %)
                       :default-value content
@@ -20,28 +20,34 @@
        (fn [this]
          (rf/dispatch [:codemirror/init block @textarea]))})))
 
-(defn code-result [{:keys [value result/evaled out err] :as result}]
+(defn code-result [{:keys [value result/evaled out class message stacktrace] :as result}]
   (cond
+    stacktrace (grapple.render/->Stacktrace class message stacktrace)
     evaled evaled
-    err (grapple.render/->Error err)
     out (grapple.render/->Print out)
     (and (string? value) (string/starts-with? value "#'")) (grapple.render/->VarName value)))
 
 (defn code-results [results]
-  (let [out (filter #(contains? % :out) results)
-        values (filter #(contains? % :value) results)]
-    [:div.code-result
-     ^{:key "out"}
-     [:div
-      (for [[i {:keys [status] :as result}] (map-indexed vector out)]
+  [:div.block-results
+   (when-let [output (seq (filter #(contains? % :out) results))]
+     ^{:key "output"}
+     [:div.block-results__output
+      (for [[i result] (map-indexed vector output)]
         (with-meta
           (grapple.render/render (code-result result))
-          {:key i}))]
+          {:key i}))])
+   (when-let [values (seq (filter #(contains? % :value) results))]
      ^{:key "values"}
-     [:div
-      (for [[i {:keys [status] :as result}] (map-indexed vector values)]
+     [:div.block-results__values
+      (for [[i result] (map-indexed vector values)]
         ^{:key i}
-        [:div (grapple.render/render (code-result result))])]]))
+        [:div (grapple.render/render (code-result result))])])
+   (when-let [error (seq (filter #(contains? % :stacktrace) results))]
+     ^{:key "stacktrace"}
+     [:div.block-results__error
+      (for [[i result] (map-indexed vector error)]
+        ^{:key i}
+        [:div (grapple.render/render (code-result result))])])])
 
 (def markdown-transformers
   (remove #(= markdown.transformers/superscript %)
@@ -76,10 +82,10 @@
      [codemirror block]
      [markdown id content])])
 
-(defmethod block :block-type/clojure [{:keys [block/id block/content block/results block/active?] :as block}]
+(defmethod block :block-type/clojure [{:keys [block/id block/content block/results block/active? block/processing?] :as block}]
   [:div.block.block--clojure
    {:key id
-    :className (when active? "block--active")}
+    :class (string/join " " [(when active? "block--active") (when processing? "block--processing")])}
    ^{:key "code"} [codemirror block]
    (when results
      ^{:key "results"} [code-results results])])

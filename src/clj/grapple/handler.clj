@@ -56,20 +56,45 @@
 (defmethod event :clojure/init [{:keys [?reply-fn]}]
   (with-open [conn (nrepl/connect :port 7888)]
     (-> (nrepl/client conn Long/MAX_VALUE)
-      (nrepl/message {:op "clone"})
+      (nrepl/message {:op :clone})
       first :new-session ?reply-fn)))
 
-(defmethod event :clojure/eval [{:keys [send-fn uid ?data]}]
+(defmethod event :clojure/eval [{:keys [send-fn uid ?data] :as arg}]
   (let [{:keys [code session-id eval-id]} ?data]
     (with-open [conn (nrepl/connect :port 7888)]
       (let [results (-> (nrepl/client conn Long/MAX_VALUE)
                       (nrepl/message
-                        {:op "eval"
+                        {:op :eval
                          :code code
                          :session session-id
                          :id eval-id}))]
         (doseq [result results]
           (send-fn uid [:eval/result {:eval-id eval-id :result result}]))))))
+
+(defmethod event :clojure/interrupt [{:keys [send-fn uid ?data]}]
+  (let [{:keys [session-id eval-id]} ?data]
+    (with-open [conn (nrepl/connect :port 7888)]
+      (loop []
+        (let [results (-> (nrepl/client conn Long/MAX_VALUE)
+                        (nrepl/message
+                          {:op :interrupt
+                           :session session-id
+                           :interrupt-id eval-id})
+                        doall)
+              statuses (into #{} (mapcat :status) results)]
+          (when-not (contains? statuses "interrupt-id-mismatch")
+            (recur))))
+      (send-fn uid [:clojure/interrupted {:eval-id eval-id}]))))
+
+(defmethod event :clojure/stacktrace [{:keys [send-fn uid ?data]}]
+  (let [{:keys [eval-id session-id]} ?data]
+    (with-open [conn (nrepl/connect :port 7888)]
+      (let [results (-> (nrepl/client conn Long/MAX_VALUE)
+                      (nrepl/message
+                        {:op :stacktrace
+                         :session session-id}))]
+        (doseq [result results]
+          (send-fn uid [:clojure/stacktrace {:eval-id eval-id :result result}]))))))
 
 (defmethod event :page/save [{:keys [?reply-fn ?data]}]
   (let [{:keys [filename blocks]} ?data]
@@ -100,6 +125,6 @@
               :handler (apply default-handler middleware)))))
 
 (defonce router
-  (sente/start-chsk-router! ch-chsk event))
+  (sente/start-chsk-router! ch-chsk event {:simple-auto-threading? true}))
 
 (def app (wrap-middleware #'routes))

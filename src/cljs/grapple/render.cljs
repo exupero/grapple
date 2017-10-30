@@ -1,28 +1,40 @@
 (ns grapple.render
-  (:require [goog.string :refer [unescapeEntities]]))
+  (:require [clojure.string :as string]
+            [goog.string :refer [unescapeEntities]]))
 
 (def nbsp (unescapeEntities "&nbsp;"))
 
 (defprotocol Renderable
   (render [_]))
 
-(defrecord Error [err]
-  Renderable
-  (render [_]
-    [:div.code-result__error err]))
-
 (defrecord Print [s]
   Renderable
   (render [_]
-    [:div.code-result__print s]))
+    [:div.block-results__printed s]))
 
 (defrecord VarName [s]
   Renderable
   (render [_]
-    [:div.code-result__var s]))
+    [:div.block-results__var s]))
+
+(defrecord Stacktrace [class message stacktrace]
+  Renderable
+  (render [_]
+    [:div.block-results__stacktrace
+     [:div.stacktrace__exception class ": " message]
+     [:div.stacktrace__frames
+      (for [frame stacktrace]
+        (if (= "clj" (:type frame))
+          [:div.stacktrace__clojure
+           (:fn frame)
+           " - " (:ns frame)
+           " - (" (:file frame) ":" (:line frame) ")"]
+          [:div.stacktrace__java
+           (:method frame)
+           " - (" (:file frame) ":" (:line frame) ")"]))]]))
 
 (defn render-collection [[open-delim close-delim] xf coll]
-  [:span.code-result__collection
+  [:span.block-results__collection
    open-delim
    (sequence
      (comp
@@ -34,22 +46,22 @@
 (extend-protocol Renderable
   nil
   (render [_]
-    [:span.code-result__nil "nil"])
+    [:span.block-results__nil "nil"])
   number
   (render [this]
-    [:span.code-result__number this])
+    [:span.block-results__number this])
   string
   (render [this]
-    [:span.code-result__string (pr-str this)])
+    [:span.block-results__string (pr-str this)])
   cljs.core/Keyword
   (render [this]
-    [:span.code-result__keyword (pr-str this)])
+    [:span.block-results__keyword (pr-str this)])
   cljs.core/Symbol
   (render [this]
-    [:span.code-result__symbol (pr-str this)])
+    [:span.block-results__symbol (pr-str this)])
   cljs.core/EmptyList
   (render [this]
-    [:span.code-result__collection "()"])
+    [:span.block-results__collection "()"])
   cljs.core/List
   (render [this]
     (render-collection

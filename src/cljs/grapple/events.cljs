@@ -30,12 +30,16 @@
                          {:block/id (generate-uuid)
                           :block/content (str "(ns " generated-ns-name "\n  (:require [grapple.plot :as plot]))")
                           :block/active? true})]]
-      {:ws/init {}
+      {:ws/init true
        :mathjax/init true
        :db {:page/session-id nil
             :page/flash {:flash/text "" :flash/on false}
             :page/block-order (mapv :block/id blocks)
             :page/blocks (into {} (map (juxt :block/id identity)) blocks)}})))
+
+(rf/reg-event-fx
+  :chsk/ws-ping
+  (fn [_ _]))
 
 (rf/reg-event-fx
   :clojure/init
@@ -120,14 +124,38 @@
                         :eval/session-id (db :page/session-id)
                         :eval/eval-id (uuid/uuid-string id)}}))))
 
+(rf/reg-event-fx
+  :block/interrupt
+  (fn [{:keys [db]} [_ id]]
+    (when (get-in db [:page/blocks id :block/processing?])
+      {:clojure/interrupt {:interrupt/eval-id (uuid/uuid-string id)
+                           :interrupt/session-id (db :page/session-id)}})))
+
 (rf/reg-event-db
+  :clojure/interrupted
+  (fn [db [_ {:keys [eval-id]}]]
+    (let [block-id (uuid/make-uuid-from eval-id)]
+      (assoc-in db [:page/blocks block-id :block/processing?] false))))
+
+(rf/reg-event-fx
   :eval/result
-  (fn [db [_ {:keys [eval-id result]}]]
-    (let [block-id (uuid/make-uuid-from eval-id)
-          db (assoc db :page/session-id (:session result))]
-      (if (= ["done"] (result :status))
-        (assoc-in db [:page/blocks block-id :block/processing?] false)
-        (update-in db [:page/blocks block-id :block/results] conj result)))))
+  (fn [{:keys [db]} [_ {:keys [eval-id result]}]]
+    (if (contains? result :ex)
+      {:clojure/stacktrace {:stacktrace/eval-id eval-id
+                            :stacktrace/session-id (db :page/session-id)}}
+      (let [block-id (uuid/make-uuid-from eval-id)
+            db (assoc db :page/session-id (:session result))]
+        (if (contains? (set (result :status)) "done")
+          {:db (assoc-in db [:page/blocks block-id :block/processing?] false)}
+          {:db (update-in db [:page/blocks block-id :block/results] conj result)})))))
+
+(rf/reg-event-fx
+  :clojure/stacktrace
+  (fn [{:keys [db]} [_ {:keys [eval-id result]}]]
+    (let [block-id (uuid/make-uuid-from eval-id)]
+      (if (contains? (set (:status result)) "done")
+        {:db (assoc-in db [:page/blocks block-id :block/processing?] false)}
+        {:db (update-in db [:page/blocks block-id :block/results] conj result)}))))
 
 (rf/reg-event-fx
   :block/render
