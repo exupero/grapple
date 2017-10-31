@@ -10,6 +10,7 @@
                  [ring "1.6.2"]
                  [ring-server "0.5.0"]
                  [ring/ring-defaults "0.3.1"]
+                 [http-kit "2.2.0"]
                  [reagent "0.7.0"]
                  [reagent-utils "0.2.1"]
                  [re-frame "0.10.2"]
@@ -62,9 +63,19 @@
               :source-map       "target/cljsbuild/public/js/app.js.map"
               :optimizations :advanced
               :pretty-print  false}}
-            :app
+            :dev
             {:source-paths ["src/cljs" "src/cljc" "env/dev/cljs"]
              :figwheel {:on-jsload "grapple.core/mount-root"}
+             :compiler
+             {:main "grapple.dev"
+              :asset-path "/js/dev"
+              :output-to "target/cljsbuild/public/js/app.js"
+              :output-dir "target/cljsbuild/public/js/dev"
+              :source-map true
+              :optimizations :none
+              :pretty-print  true}}
+            :app
+            {:source-paths ["src/cljs" "src/cljc" "env/dev/cljs"]
              :compiler
              {:main "grapple.dev"
               :asset-path "/js/out"
@@ -72,9 +83,7 @@
               :output-dir "target/cljsbuild/public/js/out"
               :source-map true
               :optimizations :none
-              :pretty-print  true}}
-            }
-   }
+              :pretty-print  true}}}}
 
   :figwheel
   {:http-server-root "public"
@@ -82,7 +91,7 @@
    :nrepl-port 7003
    :nrepl-middleware ["cemerick.piggieback/wrap-cljs-repl"]
    :css-dirs ["resources/public/css"]
-   :ring-handler grapple.handler/app}
+   :ring-handler grapple.figwheel/app}
 
   :profiles {:dev {:repl-options {:init-ns grapple.repl
                                   :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}

@@ -1,10 +1,15 @@
 (ns grapple.handler
   (:require [clojure.tools.nrepl :as nrepl]
-            [clojure.tools.nrepl.server :refer [start-server default-handler]]
+            [clojure.tools.nrepl.server :refer [start-server stop-server default-handler]]
             [clojure.edn :as edn]
-            [compojure.core :refer [GET POST defroutes]]
+            [compojure.core :refer [GET POST routes]]
             [compojure.route :refer [not-found resources]]
             [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
+            [ring.middleware.defaults :refer [site-defaults wrap-defaults]]
+            [ring.middleware.reload :refer [wrap-reload]]
+            ring.middleware.keyword-params
+            ring.middleware.params
+            [prone.middleware :refer [wrap-exceptions]]
             [hiccup.page :refer [include-js include-css html5]]
             [config.core :refer [env]]
             [cognitect.transit :as transit]
@@ -12,18 +17,11 @@
             [taoensso.sente :as sente]
             [taoensso.sente.server-adapters.http-kit :refer [get-sch-adapter]]
             [taoensso.sente.packers.transit :as sente-transit]
-            [grapple.middleware :refer [wrap-middleware]]
             grapple.plot
             [grapple.util :refer [spy]])
   (:import [java.io ByteArrayOutputStream]))
 
-(def packer (sente-transit/->TransitPacker :json {:handlers {}} {}))
-(defonce channel-socket (sente/make-channel-socket! (get-sch-adapter) {:packer packer}))
-(defonce ring-ajax-post                (channel-socket :ajax-post-fn))
-(defonce ring-ajax-get-or-ws-handshake (channel-socket :ajax-get-or-ws-handshake-fn))
-(defonce ch-chsk                       (channel-socket :ch-recv))
-(defonce chsk-send!                    (channel-socket :send-fn))
-(defonce connected-uids                (channel-socket :connected-uids))
+(declare nrepl-connection)
 
 (def mount-target
   [:div#app [:h3 "Loading..."]])
@@ -54,14 +52,14 @@
 (defmethod event :chsk/ws-ping [_])
 
 (defmethod event :clojure/init [{:keys [?reply-fn]}]
-  (with-open [conn (nrepl/connect :port 7888)]
+  (with-open [conn (@nrepl-connection)]
     (-> (nrepl/client conn Long/MAX_VALUE)
       (nrepl/message {:op :clone})
       first :new-session ?reply-fn)))
 
 (defmethod event :clojure/eval [{:keys [send-fn uid ?data] :as arg}]
   (let [{:keys [code session-id eval-id]} ?data]
-    (with-open [conn (nrepl/connect :port 7888)]
+    (with-open [conn (@nrepl-connection)]
       (let [results (-> (nrepl/client conn Long/MAX_VALUE)
                       (nrepl/message
                         {:op :eval
@@ -73,7 +71,7 @@
 
 (defmethod event :clojure/interrupt [{:keys [send-fn uid ?data]}]
   (let [{:keys [session-id eval-id]} ?data]
-    (with-open [conn (nrepl/connect :port 7888)]
+    (with-open [conn (@nrepl-connection)]
       (loop []
         (let [results (-> (nrepl/client conn Long/MAX_VALUE)
                         (nrepl/message
@@ -88,7 +86,7 @@
 
 (defmethod event :clojure/stacktrace [{:keys [send-fn uid ?data]}]
   (let [{:keys [eval-id session-id]} ?data]
-    (with-open [conn (nrepl/connect :port 7888)]
+    (with-open [conn (@nrepl-connection)]
       (let [results (-> (nrepl/client conn Long/MAX_VALUE)
                       (nrepl/message
                         {:op :stacktrace
@@ -108,23 +106,46 @@
                  (slurp (str "./" filename)))]
     (?reply-fn blocks)))
 
-(defroutes routes
-  (GET "/" [] (notebook-page))
-  (GET  "/ws" req (ring-ajax-get-or-ws-handshake req))
-  (POST "/ws" req (ring-ajax-post req))
-  (resources "/")
-  (not-found "Not Found"))
+(defn router [ring-ajax-get-or-ws-handshake ring-ajax-post]
+  (routes
+    (GET "/" [] (notebook-page))
+    (GET  "/ws" req (ring-ajax-get-or-ws-handshake req))
+    (POST "/ws" req (ring-ajax-post req))
+    (resources "/")
+    (not-found "Not Found")))
 
+(defn wrap-middleware [handler]
+  (-> handler
+    (wrap-defaults site-defaults)
+    wrap-exceptions
+    wrap-reload
+    ring.middleware.keyword-params/wrap-keyword-params
+    ring.middleware.params/wrap-params))
+
+(def packer (sente-transit/->TransitPacker :json {:handlers {}} {}))
+
+(defonce nrepl-connection (atom nil))
 (defonce nrepl-server (atom nil))
+(defonce app (atom nil))
+(defonce channel-socket (atom nil))
 
-(when-not @nrepl-server
-  (let [middleware (map resolve cider/cider-middleware)]
-    (reset! nrepl-server
-            (start-server
-              :port 7888
-              :handler (apply default-handler middleware)))))
+(defn start-notebook [nrepl-port]
+  (when-not (or @app @channel-socket)
+    (let [chsk (sente/make-channel-socket! (get-sch-adapter) {:packer packer})]
+      (reset! channel-socket chsk)
+      (reset! app (wrap-middleware (router (chsk :ajax-get-or-ws-handshake-fn) (chsk :ajax-post-fn))))
+      (sente/start-chsk-router! (chsk :ch-recv) event {:simple-auto-threading? true})))
+  (when-not @nrepl-server
+    (reset! nrepl-server (start-server
+                           :port nrepl-port
+                           :handler (apply default-handler
+                                           (map resolve cider/cider-middleware))))
+    (reset! nrepl-connection #(nrepl/connect :port nrepl-port))))
 
-(defonce router
-  (sente/start-chsk-router! ch-chsk event {:simple-auto-threading? true}))
-
-(def app (wrap-middleware #'routes))
+(defn stop-notebook []
+  (when-let [n @nrepl-server]
+    (stop-server n)
+    (reset! nrepl-server nil))
+  (when @app (reset! app nil))
+  (when @channel-socket
+    (reset! channel-socket nil)))
