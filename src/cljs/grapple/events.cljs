@@ -5,8 +5,7 @@
             [re-frame.core :as rf]
             [cljs-uuid-utils.core :as uuid]
             cljsjs.codemirror
-            [grapple.nav :as nav]
-            [grapple.evaluate :as evaluate]))
+            [grapple.nav :as nav]))
 
 (def template-markdown-block
   {:block/type :block-type/markdown
@@ -22,7 +21,8 @@
   :page/init
   [(rf/inject-cofx :generate/ns-name)
    (rf/inject-cofx :generator/uuid)]
-  (fn [{generated-ns-name :generated/ns-name generate-uuid :generator/uuid} _]
+  (fn [{generated-ns-name :generated/ns-name generate-uuid :generator/uuid}
+       [_ {:keys [init/tag-readers init/tag-writers] :as arg}]]
     (let [blocks [(merge template-markdown-block
                          {:block/id (generate-uuid)
                           :block/content "# My Grapple Notebook"})
@@ -30,10 +30,11 @@
                          {:block/id (generate-uuid)
                           :block/content (str "(ns " generated-ns-name "\n  (:require [grapple.plot :as plot]))")
                           :block/active? true})]]
-      {:ws/init true
+      {:ws/init {:ws-init/write-handlers tag-writers
+                 :ws-init/read-handlers tag-readers}
        :mathjax/init true
        :db {:page/session-id nil
-            :page/flash {:flash/text "" :flash/on false}
+            :page/flash {:flash/text "" :flash/on? false}
             :page/block-order (mapv :block/id blocks)
             :page/blocks (into {} (map (juxt :block/id identity)) blocks)}})))
 
@@ -167,12 +168,6 @@
           focus-block (nav/block-after db id)]
       {:codemirror/focus {:focus/codemirror (:block/codemirror focus-block)}
        :db (nav/activate db (:block/id focus-block))})))
-
-(rf/reg-event-db
-  :block/results
-  (fn [db [_ id results]]
-    (assoc-in db [:page/blocks id :block/results]
-              (evaluate/results-with-evaled results))))
 
 (rf/reg-event-fx
   :block/edit
@@ -329,8 +324,7 @@
     (assoc db
            :page/block-order (map :block/id blocks)
            :page/blocks (into {}
-                              (map (fn [{:keys [block/id block/results] :as block}]
-                                     [id (update block :block/results evaluate/results-with-evaled)]))
+                              (map (juxt :block/id identity))
                               blocks))))
 
 (rf/reg-event-db
@@ -347,9 +341,9 @@
   :page/flash
   (fn [{:keys [db]} [_ text]]
     {:action/defer {:defer/message [:page/unflash] :defer/seconds 1}
-     :db (assoc db :page/flash {:flash/text text :flash/on true})}))
+     :db (assoc db :page/flash {:flash/text text :flash/on? true})}))
 
 (rf/reg-event-db
   :page/unflash
   (fn [db _]
-    (assoc-in db [:page/flash :flash/on] false)))
+    (assoc-in db [:page/flash :flash/on?] false)))

@@ -29,25 +29,14 @@
 
 (defn code-results [results]
   [:div.block-results
-   (when-let [output (seq (filter #(contains? % :out) results))]
-     ^{:key "output"}
-     [:div.block-results__output
-      (for [[i result] (map-indexed vector output)]
-        (with-meta
-          (grapple.render/render (code-result result))
-          {:key i}))])
-   (when-let [values (seq (filter #(contains? % :value) results))]
-     ^{:key "values"}
-     [:div.block-results__values
-      (for [[i result] (map-indexed vector values)]
-        ^{:key i}
-        [:div (grapple.render/render (code-result result))])])
-   (when-let [error (seq (filter #(contains? % :stacktrace) results))]
-     ^{:key "stacktrace"}
-     [:div.block-results__error
-      (for [[i result] (map-indexed vector error)]
-        ^{:key i}
-        [:div (grapple.render/render (code-result result))])])])
+   (for [[field node] [[:out :div.block-results__output]
+                       [:value :div.block-results__values]
+                       [:stacktrace :div.block-results__error]]]
+     (when-let [values (seq (filter #(contains? % field) results))]
+       [node {:key field}
+        (for [[i result] (map-indexed vector values)]
+          [:div {:key i}
+           [(grapple.render/render (code-result result))]])]))])
 
 (def markdown-transformers
   (remove #(= markdown.transformers/superscript %)
@@ -138,11 +127,11 @@
 (defn page []
   [:div
    [:div {:key "modals-and-flash"}
-    (let [{:keys [flash/text flash/on]} @(rf/subscribe [:page/flash])]
+    (let [{:keys [flash/text flash/on?]} @(rf/subscribe [:page/flash])]
       [:div.flash
        {:key "flash"
-        :class [(when on "flash--on")]}
-       text])
+        :class (string/join " " [(when on? "flash--on")])}
+       [:div.flash__text text]])
     (when @(rf/subscribe [:page/show-save-modal?])
       ^{:key "save-modal"} [save-modal])
     (when @(rf/subscribe [:page/show-load-modal?])

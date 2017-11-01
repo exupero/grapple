@@ -1,6 +1,8 @@
 (ns grapple.effects
   (:require-macros [grapple.util :refer [spy]])
-  (:require [re-frame.core :as rf]
+  (:require [clojure.string :as string]
+            [cljs.reader :as edn]
+            [re-frame.core :as rf]
             [ajax.core :as http]
             [taoensso.sente :as sente]
             [taoensso.sente.packers.transit :as sente-transit]
@@ -8,15 +10,24 @@
             cljsjs.codemirror.mode.clojure
             cljsjs.codemirror.mode.markdown
             cljsjs.codemirror.addon.edit.closebrackets
-            cljsjs.codemirror.addon.edit.matchbrackets
-            [grapple.evaluate :refer [write-handlers]]))
+            cljsjs.codemirror.addon.edit.matchbrackets))
 
-(def packer (sente-transit/->TransitPacker :json {:handlers write-handlers} {}))
-(defonce channel-socket (sente/make-channel-socket! "/ws" {:type :auto :packer packer}))
-(defonce chsk       (channel-socket :chsk))
-(defonce ch-chsk    (channel-socket :ch-recv))
-(defonce chsk-send! (channel-socket :send-fn))
-(defonce chsk-state (channel-socket :state))
+(defonce chsk-send! (atom nil))
+(defonce tag-readers (atom nil))
+
+(defn with-evaled [{:keys [value] :as result}]
+  (cond
+    (nil? value) result
+    (string/starts-with? value "#'") result
+    :else (assoc result :result/evaled (edn/read-string {:readers @tag-readers} value))))
+
+(defmulti event first)
+
+(defmethod event :default [data]
+  (rf/dispatch data))
+
+(defmethod event :eval/result [[ev result]]
+  (rf/dispatch [ev (update result :result with-evaled)]))
 
 (defmulti event-msg-handler :id)
 
@@ -24,14 +35,18 @@
   (rf/dispatch [:clojure/init]))
 
 (defmethod event-msg-handler :chsk/recv [{:keys [id ?data]}]
-  (rf/dispatch ?data))
+  (event ?data))
 
 (defmethod event-msg-handler :chsk/state [_])
 
 (rf/reg-fx
   :ws/init
-  (fn [_]
-    (sente/start-client-chsk-router! ch-chsk event-msg-handler)))
+  (fn [{:keys [ws-init/write-handlers ws-init/read-handlers]}]
+    (reset! tag-readers read-handlers)
+    (let [packer (sente-transit/->TransitPacker :json {:handlers write-handlers} {})
+          {:keys [ch-recv send-fn]} (sente/make-channel-socket! "/ws" {:type :auto :packer packer})]
+      (reset! chsk-send! send-fn)
+      (sente/start-client-chsk-router! ch-recv event-msg-handler))))
 
 (rf/reg-fx
   :mathjax/init
@@ -46,22 +61,22 @@
 (rf/reg-fx
   :clojure/init
   (fn [{:keys [init/on-success]}]
-    (chsk-send! [:clojure/init] js/Number.MAX_SAFE_INTEGER on-success)))
+    (@chsk-send! [:clojure/init] js/Number.MAX_SAFE_INTEGER on-success)))
 
 (rf/reg-fx
   :clojure/eval
   (fn [{:keys [eval/code eval/session-id eval/eval-id]}]
-    (chsk-send! [:clojure/eval {:code code :session-id session-id :eval-id eval-id}])))
+    (@chsk-send! [:clojure/eval {:code code :session-id session-id :eval-id eval-id}])))
 
 (rf/reg-fx
   :clojure/interrupt
   (fn [{:keys [interrupt/session-id interrupt/eval-id]}]
-    (chsk-send! [:clojure/interrupt {:session-id session-id :eval-id eval-id}])))
+    (@chsk-send! [:clojure/interrupt {:session-id session-id :eval-id eval-id}])))
 
 (rf/reg-fx
   :clojure/stacktrace
   (fn [{:keys [stacktrace/eval-id stacktrace/session-id]}]
-    (chsk-send! [:clojure/stacktrace {:eval-id eval-id :session-id session-id}])))
+    (@chsk-send! [:clojure/stacktrace {:eval-id eval-id :session-id session-id}])))
 
 (rf/reg-fx
   :codemirror/init
@@ -87,13 +102,20 @@
 (rf/reg-fx
   :page/save
   (fn [{:keys [save/filename save/blocks save/on-success]}]
-    (chsk-send! [:page/save {:filename filename :blocks blocks}]
+    (@chsk-send! [:page/save {:filename filename :blocks blocks}]
                 (* 5 1000) on-success)))
 
 (rf/reg-fx
   :page/load
   (fn [{:keys [load/filename load/on-success]}]
-    (chsk-send! [:page/load {:filename filename}] (* 5 1000) on-success)))
+    (@chsk-send!
+       [:page/load {:filename filename}]
+       (* 5 1000)
+       (fn [blocks]
+         (on-success
+           (map (fn [{:keys [block/id block/results] :as block}]
+                  (update block :block/results #(map with-evaled %)))
+                blocks))))))
 
 (rf/reg-fx
   :action/defer

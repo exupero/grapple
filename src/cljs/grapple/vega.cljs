@@ -12,18 +12,15 @@
     (.initialize node)
     .run))
 
-(defn vega-plot [spec]
-  (r/create-class
-    {:reagent-render
-     (fn [] [:span.graph])
-     :component-did-mount
-     (fn [this]
-       (render-vega (r/dom-node this) spec))
-     :component-will-update
-     (fn [this [_ spec]]
-       (render-vega (r/dom-node this) spec))}))
-
 (defrecord Vega [spec]
   Renderable
   (render [_]
-    [vega-plot spec]))
+    (r/create-class
+      {:reagent-render
+       (fn [] [:span])
+       :component-did-mount
+       (fn [this]
+         (render-vega (r/dom-node this) spec))
+       :component-will-update
+       (fn [this _]
+         (render-vega (r/dom-node this) spec))})))

@@ -39,14 +39,16 @@ button {
 }
 
 .flash {
+  pointer-events: none;
   position: fixed;
   width: 600px;
   margin: 0 100px;
-  z-index: 0;
   font-weight: bold;
   color: steelblue;
   font-size: 16pt;
-  text-align: center;
+  display: flex;
+  justify-content: center;
+  z-index: 2;
   opacity: 0;
   -webkit-opacity: 0;
   -moz-opacity: 0;
@@ -61,7 +63,12 @@ button {
     -webkit-opacity: 1;
     -moz-opacity: 1;
     -ms-opacity: 1;
-    z-index: 2;
+  }
+  .flash__text {
+    border-radius: 2rem;
+    border: 1px solid hsl(207, 44%, 75%);
+    padding: 0.3rem 2rem;
+    background-color: white;
   }
 
 .modal {
@@ -174,10 +181,6 @@ button {
 }
 .stacktrace__java {
   color: #aaa;
-}
-
-graph {
-  margin: 1rem;
 }
 
 .cm-s-neat .CodeMirror-matchingbracket {

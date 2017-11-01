@@ -17,7 +17,6 @@
             [taoensso.sente :as sente]
             [taoensso.sente.server-adapters.http-kit :refer [get-sch-adapter]]
             [taoensso.sente.packers.transit :as sente-transit]
-            grapple.plot
             [grapple.util :refer [spy]])
   (:import [java.io ByteArrayOutputStream]))
 
@@ -57,7 +56,7 @@
       (nrepl/message {:op :clone})
       first :new-session ?reply-fn)))
 
-(defmethod event :clojure/eval [{:keys [send-fn uid ?data] :as arg}]
+(defmethod event :clojure/eval [{:keys [send-fn uid ?data]}]
   (let [{:keys [code session-id eval-id]} ?data]
     (with-open [conn (@nrepl-connection)]
       (let [results (-> (nrepl/client conn Long/MAX_VALUE)
@@ -101,9 +100,7 @@
 
 (defmethod event :page/load [{:keys [?reply-fn ?data]}]
   (let [{:keys [filename]} ?data
-        blocks (edn/read-string
-                 {'grapple.plot.Vega grapple.plot/->Vega}
-                 (slurp (str "./" filename)))]
+        blocks (edn/read-string (slurp (str "./" filename)))]
     (?reply-fn blocks)))
 
 (defn router [ring-ajax-get-or-ws-handshake ring-ajax-post]
