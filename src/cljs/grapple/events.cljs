@@ -60,23 +60,22 @@
    :Shift-Enter evaluate
    :Ctrl-Shift-Enter #(rf/dispatch [:blocks/evaluate])
    :Ctrl-C #(rf/dispatch [:block/interrupt id])
-   "Ctrl-G Ctrl-A" #(rf/dispatch [:word/completions (nav/current-word %)])
+   "Ctrl-G Ctrl-A" #(rf/dispatch [:word/completions (nav/current-word %)])   ; not implemented
    "Ctrl-G Ctrl-B" #(rf/dispatch [:block/insert-new-before id])
-   "Ctrl-G Ctrl-C" #(rf/dispatch [:word/documentation (nav/current-word %)])
+   "Ctrl-G Ctrl-C" #(rf/dispatch [:word/documentation (nav/current-word %)]) ; not implemented
    "Ctrl-G Ctrl-D" #(rf/dispatch [:block/move-down id])
    "Ctrl-G Ctrl-E" #(rf/dispatch [:page/save-as])
-   "Ctrl-G Ctrl-G" #(rf/dispatch [:block/commands id])
+   "Ctrl-G Ctrl-G" #(rf/dispatch [:block/commands id])                       ; not implemented
    "Ctrl-G Ctrl-J" #(rf/dispatch [:block/to-clojure id])
    "Ctrl-G Ctrl-L" #(rf/dispatch [:page/load])
    "Ctrl-G Ctrl-M" #(rf/dispatch [:block/to-markdown id])
    "Ctrl-G Ctrl-N" #(rf/dispatch [:block/insert-new-after id])
-   "Ctrl-G Ctrl-O" #(rf/dispatch [:block/clear-results id])
+   "Ctrl-G Ctrl-O" #(rf/dispatch [:block/clear-results id])                  ; not implemented
    "Ctrl-G Ctrl-S" #(rf/dispatch [:page/save])
    "Ctrl-G Ctrl-U" #(rf/dispatch [:block/move-up id])
-   "Ctrl-G Ctrl-W" #(rf/dispatch [:page/save-without-markup])
    "Ctrl-G Ctrl-X" #(rf/dispatch [:block/delete id])
-   "Ctrl-G Ctrl-Z" #(rf/dispatch [:blocks/clear-results])
-   "Ctrl-G Ctrl-\\" #(rf/dispatch [:block/undo-delete])})
+   "Ctrl-G Ctrl-Z" #(rf/dispatch [:blocks/clear-results])                    ; not implemented
+   "Ctrl-G Ctrl-\\" #(rf/dispatch [:block/undo-delete])})                    ; not implemented
 
 (rf/reg-event-fx
   :codemirror/init
@@ -174,11 +173,6 @@
   (fn [{:keys [db]} [_ id]]
     {:db (assoc-in db [:page/blocks id :block/active?] true)}))
 
-(rf/reg-event-fx
-  :block/commands
-  (fn [{:keys [db]} [_ id]]
-    {:db (assoc db :page/show-modal? true :block/selected id)}))
-
 (rf/reg-event-db
   :blocks/activate
   (fn [db [_ id]]
@@ -254,6 +248,20 @@
                 nav/move-right
                 zip/root
                 vec)))))
+
+(rf/reg-event-db
+  :block/to-clojure
+  (fn [db [_ id]]
+    (assoc-in db [:page/blocks id :block/type] :block-type/clojure)))
+
+(rf/reg-event-db
+  :block/to-markdown
+  (fn [db [_ id]]
+    (update-in db [:page/blocks id]
+               (fn [block]
+                 (-> block
+                   (assoc :block/type :block-type/markdown)
+                   (dissoc :block/results))))))
 
 (defn savable-blocks [{:keys [page/block-order page/blocks]}]
   (sequence

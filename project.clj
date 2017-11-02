@@ -1,4 +1,4 @@
-(defproject grapple "0.1.0-SNAPSHOT"
+(defproject org.exupero/grapple "0.1.0-SNAPSHOT"
   :description "Grapple Notebook REPL"
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
@@ -11,6 +11,7 @@
                  [ring-server "0.5.0"]
                  [ring/ring-defaults "0.3.1"]
                  [http-kit "2.2.0"]
+                 [prone "1.1.4"]
                  [reagent "0.7.0"]
                  [reagent-utils "0.2.1"]
                  [re-frame "0.10.2"]

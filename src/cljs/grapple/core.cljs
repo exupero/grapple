@@ -7,13 +7,17 @@
             grapple.effects
             grapple.events
             grapple.subs
-            grapple.vega
-            grapple.views))
+            grapple.views
+            grapple.renderable.table
+            grapple.renderable.vega))
 
 (def default-tags
   [{:tag 'grapple.plot.Vega
-    :reader #(grapple.vega/->Vega (:spec %))
-    :record grapple.vega/Vega}])
+    :reader #(grapple.renderable.vega/->Vega (:spec %))
+    :record grapple.renderable.vega/Vega}
+   {:tag 'grapple.table.Table
+    :reader #(grapple.renderable.table/->Table (:headings %) (:rows %))
+    :record grapple.renderable.table/Table}])
 
 (defn mount-root []
   (r/render [grapple.views/page] (.getElementById js/document "app")))

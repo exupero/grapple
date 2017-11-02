@@ -1,4 +1,4 @@
-(ns grapple.vega
+(ns grapple.renderable.vega
   (:require-macros [grapple.util :refer [spy]])
   (:require [reagent.core :as r]
             cljsjs.vega

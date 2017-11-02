@@ -1,4 +1,5 @@
 (ns grapple.render
+  (:require-macros [grapple.util :refer [spy]])
   (:require [clojure.string :as string]
             [goog.string :refer [unescapeEntities]]
             [reagent.core :as r]))
@@ -30,13 +31,13 @@
       [:div.block-results__stacktrace
        [:div.stacktrace__exception class ": " message]
        [:div.stacktrace__frames
-        (for [frame stacktrace]
+        (for [[i frame] (map-indexed vector stacktrace)]
           (if (= "clj" (:type frame))
-            [:div.stacktrace__clojure
+            [:div.stacktrace__clojure {:key i}
              (:fn frame)
              " - " (:ns frame)
              " - (" (:file frame) ":" (:line frame) ")"]
-            [:div.stacktrace__java
+            [:div.stacktrace__java {:key i}
              (:method frame)
              " - (" (:file frame) ":" (:line frame) ")"]))]])))
 
@@ -75,14 +76,14 @@
     (render-collection
       [\( \)]
       (map-indexed (fn [i x]
-                     (with-meta (render x) {:key i})))
+                     ^{:key i} [(render x)]))
       this))
   cljs.core/PersistentVector
   (render [this]
     (render-collection
       [\[ \]]
       (map-indexed (fn [i x]
-                     (with-meta (render x) {:key i})))
+                     ^{:key i} [(render x)]))
       this))
   cljs.core/PersistentArrayMap
   (render [this]
@@ -91,9 +92,9 @@
       (map-indexed (fn [i [k v]]
                      (with-meta
                        (list
-                         (with-meta (render k) {:key "key"})
+                         ^{:key "key"} [(render k)]
                          nbsp
-                         (with-meta (render v) {:key "value"}))
+                         ^{:key "value"} [(render v)])
                        {:key i})))
       this))
   cljs.core/PersistentHashSet
@@ -101,5 +102,5 @@
     (render-collection
       ["#{" \}]
       (map-indexed (fn [i v]
-                     (with-meta (render v) {:key i})))
+                     ^{:key i} [(render v)]))
       this)))
