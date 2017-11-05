@@ -6,4 +6,4 @@
 
 (enable-console-print!)
 
-(core/init! core/default-tags)
+(core/init!)

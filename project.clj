@@ -26,8 +26,7 @@
                  [cider/cider-nrepl "0.15.1"]
                  [com.taoensso/sente "1.11.0"]
                  [markdown-clj "1.0.1"]
-                 [cljsjs/codemirror "5.24.0-1"]
-                 [cljsjs/vega "3.0.1-0"]]
+                 [cljsjs/codemirror "5.24.0-1"]]
 
   :plugins [[lein-environ "1.0.2"]
             [lein-cljsbuild "1.1.5"]]

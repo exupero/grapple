@@ -1,6 +1,7 @@
 (ns grapple.events
   (:require-macros [grapple.util :refer [spy]])
-  (:require [clojure.string :as string]
+  (:require [clojure.set :refer [difference union]]
+            [clojure.string :as string]
             [clojure.zip :as zip]
             [re-frame.core :as rf]
             [cljs-uuid-utils.core :as uuid]
@@ -36,7 +37,34 @@
        :db {:page/session-id nil
             :page/flash {:flash/text "" :flash/on? false}
             :page/block-order (mapv :block/id blocks)
-            :page/blocks (into {} (map (juxt :block/id identity)) blocks)}})))
+            :page/blocks (into {} (map (juxt :block/id identity)) blocks)
+            :scripts/loaded #{}}})))
+
+(rf/reg-event-fx
+  :scripts/load
+  (fn [{:keys [db]} [_ scripts]]
+    (let [to-load (difference (set scripts) (db :scripts/loaded))]
+      (when (seq to-load)
+        {:scripts/load {:load/scripts to-load
+                        :load/on-success #(rf/dispatch [:scripts/loaded to-load])
+                        :load/on-error #(js/console.error "Failed to load script" %)}}))))
+
+(rf/reg-event-fx
+  :scripts/callback
+  (fn [{:keys [db]} [_ {:keys [callback/scripts callback/function] :as callback-info}]]
+    (if (every? (db :scripts/loaded) scripts)
+      {:action/execute function}
+      {:db (update db :scripts/callbacks conj callback-info)})))
+
+(rf/reg-event-fx
+  :scripts/loaded
+  (fn [{:keys [db]} [_ scripts]]
+    (let [db (update db :scripts/loaded union (set scripts))
+          satisfied? #(every? (db :scripts/loaded) (:callback/scripts %))
+          callbacks (filter satisfied? (db :scripts/callbacks))]
+      {:db (update db :scripts/callbacks #(remove satisfied? %))
+       :action/execute #(doseq [{:keys [callback/function]} callbacks]
+                          (function))})))
 
 (rf/reg-event-fx
   :chsk/ws-ping
@@ -92,6 +120,7 @@
       {:codemirror/init {:codemirror/id id
                          :codemirror/node node
                          :codemirror/config {:lineNumbers true
+                                             :lineWrapping true
                                              :viewportMargin js/Infinity
                                              :matchBrackets true
                                              :autoCloseBrackets true

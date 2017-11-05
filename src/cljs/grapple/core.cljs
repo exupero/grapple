@@ -7,29 +7,14 @@
             grapple.effects
             grapple.events
             grapple.subs
-            grapple.views
-            grapple.renderable.table
-            grapple.renderable.vega))
-
-(def default-tags
-  [{:tag 'grapple.plot.Vega
-    :reader #(grapple.renderable.vega/->Vega (:spec %))
-    :record grapple.renderable.vega/Vega}
-   {:tag 'grapple.table.Table
-    :reader #(grapple.renderable.table/->Table (:headings %) (:rows %))
-    :record grapple.renderable.table/Table}])
+            grapple.views))
 
 (defn mount-root []
   (r/render [grapple.views/page] (.getElementById js/document "app")))
 
-(defn init! [tags]
-  (let [tag-readers (into {} (map (juxt :tag :reader)) tags)
-        tag-writers (into {} (map (fn [{:keys [record tag]}]
-                                    [record
-                                     (transit/write-handler (constantly (name tag)) identity)]))
-                          tags)]
-    (rf/dispatch-sync
-      [:page/init
-       {:init/tag-readers tag-readers
-        :init/tag-writers tag-writers}]))
+(defn init! []
+  (rf/dispatch-sync
+    [:page/init
+     {:init/tag-readers {'grapple.render.Renderable #(grapple.render/->Generic (:spec %))}
+      :init/tag-writers {grapple.render/Generic (transit/write-handler (constantly "grapple.render.Renderable") identity)}}])
   (mount-root))

@@ -114,6 +114,7 @@ button {
     border-bottom: 1px solid lightgray;
     padding: 0.3rem 0.5rem;
     position: relative;
+    white-space: pre;
   }
     .block-results__output::before {
       content: '';
@@ -180,6 +181,11 @@ button {
   color: steelblue;
 }
 .stacktrace__java {
+  color: #aaa;
+}
+
+.loading-scripts {
+  font-family: 'Helvetica Neue', Verdana, Helvetica, Arial, sans-serif;
   color: #aaa;
 }
 

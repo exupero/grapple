@@ -1,8 +1,10 @@
 (ns grapple.render
   (:require-macros [grapple.util :refer [spy]])
   (:require [clojure.string :as string]
+            [clojure.walk :as walk]
             [goog.string :refer [unescapeEntities]]
-            [reagent.core :as r]))
+            [reagent.core :as r]
+            [re-frame.core :as rf]))
 
 (def nbsp (unescapeEntities "&nbsp;"))
 
@@ -41,14 +43,14 @@
              (:method frame)
              " - (" (:file frame) ":" (:line frame) ")"]))]])))
 
-(defn render-collection [[open-delim close-delim] xf coll]
+(defn render-collection [[open-delim inter-delim close-delim] xf coll]
   (constant
     [:span.block-results__collection
      open-delim
      (sequence
        (comp
          xf
-         (interpose (str "," nbsp)))
+         (interpose inter-delim))
        coll)
      close-delim]))
 
@@ -74,21 +76,21 @@
   cljs.core/List
   (render [this]
     (render-collection
-      [\( \)]
+      [\( nbsp \)]
       (map-indexed (fn [i x]
                      ^{:key i} [(render x)]))
       this))
   cljs.core/PersistentVector
   (render [this]
     (render-collection
-      [\[ \]]
+      [\[ nbsp \]]
       (map-indexed (fn [i x]
                      ^{:key i} [(render x)]))
       this))
   cljs.core/PersistentArrayMap
   (render [this]
     (render-collection
-      [\{ \}]
+      [\{ (str "," nbsp) \}]
       (map-indexed (fn [i [k v]]
                      (with-meta
                        (list
@@ -100,7 +102,42 @@
   cljs.core/PersistentHashSet
   (render [this]
     (render-collection
-      ["#{" \}]
+      ["#{" nbsp \}]
       (map-indexed (fn [i v]
                      ^{:key i} [(render v)]))
       this)))
+
+(defrecord Generic [spec]
+  Renderable
+  (render [_]
+    (let [{code :update :keys [scripts data]} spec
+          update-fn (if code
+                      (js/eval (str "(function(data,node){" code "})"))
+                      (constantly nil))
+          script-state (atom :not-loaded)
+          updater (fn [this]
+                    (reset! script-state :loaded)
+                    (update-fn (clj->js data) (r/dom-node this)))
+          enqueue-callback (fn [this]
+                             (rf/dispatch [:scripts/callback
+                                           {:callback/scripts scripts
+                                            :callback/function #(updater this)}]))]
+      (r/create-class
+        {:reagent-render
+         (fn [_]
+           (condp = @script-state
+             :not-loaded nil
+             :loading [:div.loading-scripts "Loading scripts..."]
+             :loaded (walk/postwalk
+                       #(if (instance? Generic %)
+                          [(render %)] %)
+                       (spec :dom))))
+         :component-will-mount
+         (fn [_]
+           (when scripts
+             (reset! script-state :loading)
+             (rf/dispatch [:scripts/load scripts])))
+         :component-did-mount
+         enqueue-callback
+         :component-did-update
+         enqueue-callback}))))
