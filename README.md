@@ -2,6 +2,10 @@
 
 Grapple is a notebook-style REPL for exploring, understanding, and presenting data. It is inspired by the [Gorilla REPL](https://github.com/JonyEpsilon/gorilla-repl), but with a client built on ClojureScript that aims to be easier to customize. Grapple's graph generation and composition idioms are similar to Gorilla's, and most of the same keyboard shortcuts have been implemented.
 
+Here's an example, a contour plot:
+
+![Contour plot](https://raw.githubusercontent.com/exupero/grapple/master/screenshots/contour-plot.png)
+
 _This project is still alpha. Contributions welcome._
 
 ## Usage
