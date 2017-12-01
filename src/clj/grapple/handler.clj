@@ -4,12 +4,6 @@
             [clojure.edn :as edn]
             [compojure.core :refer [GET POST routes]]
             [compojure.route :refer [not-found resources]]
-            [ring.middleware.anti-forgery :refer [*anti-forgery-token*]]
-            [ring.middleware.defaults :refer [site-defaults wrap-defaults]]
-            [ring.middleware.reload :refer [wrap-reload]]
-            ring.middleware.keyword-params
-            ring.middleware.params
-            [prone.middleware :refer [wrap-exceptions]]
             [hiccup.page :refer [include-js include-css html5]]
             [config.core :refer [env]]
             [cognitect.transit :as transit]
@@ -17,6 +11,7 @@
             [taoensso.sente :as sente]
             [taoensso.sente.server-adapters.http-kit :refer [get-sch-adapter]]
             [taoensso.sente.packers.transit :as sente-transit]
+            [grapple.middleware :refer [wrap-middleware]]
             [grapple.util :refer [spy]])
   (:import [java.io ByteArrayOutputStream]))
 
@@ -32,7 +27,7 @@
            :content "width=device-width, initial-scale=1"}]
    (include-css "/css/jslib/codemirror-5.3.0.css")
    (include-css "/css/jslib/codemirror-themes/neat.css")
-   (include-css (if (env :dev) "/css/site.css" "/css/site.min.css"))])
+   (include-css "/css/site.css")])
 
 (defn notebook-page []
   (html5
@@ -110,14 +105,6 @@
     (POST "/ws" req (ring-ajax-post req))
     (resources "/")
     (not-found "Not Found")))
-
-(defn wrap-middleware [handler]
-  (-> handler
-    (wrap-defaults site-defaults)
-    wrap-exceptions
-    wrap-reload
-    ring.middleware.keyword-params/wrap-keyword-params
-    ring.middleware.params/wrap-params))
 
 (def packer (sente-transit/->TransitPacker :json {:handlers {}} {}))
 

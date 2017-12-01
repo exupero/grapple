@@ -13,14 +13,20 @@ _This project is still alpha. Contributions welcome._
 To run the Grapple server,
 
 ```
-lein fighweel
+lein figwheel
 ```
 
-If you want to run without Figwheel,
+You can also start it from a Clojure REPL. First run,
 
 ```
-lein cljsbuild once app
-lein run
+lein do clean, cljsbuild once prod
+```
+
+Then start a REPL and run,
+
+```
+(require 'grapple.server)
+(grapple.server/start-server {})
 ```
 
 The client is built on [Reagent](https://holmsand.github.io/reagent/) and [re-frame](https://github.com/Day8/re-frame). If you're unfamiliar with re-frame, I recommend Eric Normand's [excellent guide](https://purelyfunctional.tv/guide/re-frame-building-blocks/).
@@ -51,7 +57,6 @@ I'm open to improvements on this scheme.
 
 ## To Do
 
-- [ ] Configure to be usable as a library from another project
 - [ ] Better system for creating custom components
 - [ ] Add a menu of available commands and keyboard shortcuts
 - [ ] Create a Leiningen plugin
