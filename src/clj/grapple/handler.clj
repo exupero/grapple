@@ -28,7 +28,7 @@
            :content "width=device-width, initial-scale=1"}]
    (include-css "/css/jslib/codemirror-5.3.0.css")
    (include-css "/css/jslib/codemirror-themes/neat.css")
-   (include-css "/css/site.css")])
+   (include-css "/css/screen.css")])
 
 (defn notebook-page []
   (html5

@@ -1,6 +1,6 @@
 (defproject org.exupero/grapple "0.1.0-SNAPSHOT"
   :description "Grapple Notebook REPL"
-  :url "http://example.com/FIXME"
+  :url "https://github.com/exupero/grapple"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
 
@@ -25,10 +25,12 @@
                  [cider/cider-nrepl "0.10.2"]
                  [com.taoensso/sente "1.11.0"]
                  [markdown-clj "1.0.1"]
-                 [cljsjs/codemirror "5.24.0-1"]]
+                 [cljsjs/codemirror "5.24.0-1"]
+                 [garden "1.3.5"]]
 
   :plugins [[lein-environ "1.0.2"]
-            [lein-cljsbuild "1.1.7"]]
+            [lein-cljsbuild "1.1.7"]
+            [lein-garden "0.3.0"]]
 
   :min-lein-version "2.5.0"
 
@@ -72,6 +74,13 @@
    :css-dirs ["resources/public/css"]
    :ring-handler grapple.figwheel/app}
 
+  :garden
+  {:builds [{:id "screen"
+             :source-paths ["src/clj"]
+             :stylesheet grapple.css/screen
+             :compiler {:output-to "resources/public/css/screen.css"
+                        :pretty-print? true}}]}
+
   :profiles {:dev {:dependencies [[binaryage/devtools "0.9.7"]
                                   [ring/ring-mock "0.3.1"]
                                   [ring/ring-devel "1.6.2"]
@@ -90,4 +99,7 @@
              :uberjar {:source-paths ["env/prod/clj"]
                        :prep-tasks ["compile" ["cljsbuild" "once" "prod"]]
                        :env {:production true}
-                       :omit-source true}})
+                       :omit-source true}}
+
+  :prep-tasks [["cljsbuild" "once" "min"] ["garden" "once"] "compile"]
+  )

@@ -1,0 +1,206 @@
+h1 {
+  font-size: 20pt;
+}
+
+h3 {
+  margin: 0;
+}
+
+.body-container {
+  font-family: 'Helvetica Neue', Verdana, Helvetica, Arial, sans-serif;
+  max-width: 800px;
+  margin: 1rem auto;
+  -webkit-font-smoothing: antialiased;
+  font-size: 1.125rem;
+  line-height: 1.5rem;
+  color: #333;
+}
+
+pre {
+  margin: 0;
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+button {
+  padding: 0.5rem 0.8rem;
+  font-size: 12pt;
+  background: blue;
+  color: white;
+  border: none;
+  border-radius: 0.3rem;
+}
+
+.flash {
+  width: 600px;
+  justify-content: center;
+  margin: 0 100px;
+  -webkit-transition: opacity 0.2s;
+  -webkit-opacity: 0;
+  -moz-transition: opacity 0.2s;
+  position: fixed;
+  z-index: 2;
+  font-weight: bold;
+  -ms-transition: opacity 0.2s;
+  font-size: 16pt;
+  display: flex;
+  pointer-events: none;
+  -ms-opacity: 0;
+  transition: opacity 0.2s;
+  color: steelblue;
+  opacity: 0;
+  -moz-opacity: 0;
+}
+
+.flash--on {
+  opacity: 1;
+  -webkit-opacity: 1;
+  -moz-opacity: 1;
+  -ms-opacity: 1;
+}
+
+.flash__text {
+  border-radius: 2rem;
+  border: 1px solid #a3c2db;
+  padding: 0.3rem 2rem;
+  background-color: white;
+}
+
+.modal {
+  background: lightgray;
+  position: fixed;
+  width: 600px;
+  margin: 0 100px;
+  z-index: 1;
+  padding: 1rem;
+  border: 1px solid gray;
+}
+
+.modal__button {
+  margin-top: 0.5rem;
+  float: right;
+  display: inline-block;
+}
+
+.block {
+  position: relative;
+  margin-bottom: 0.5rem;
+  z-index: 0;
+}
+
+.block.block--active .CodeMirror {
+  border: 1px solid hotpink;
+}
+
+.block.block--processing .CodeMirror-gutters {
+  background-color: #abfcab;
+}
+
+.CodeMirror {
+  height: auto;
+  line-height: 1.5;
+  border: 1px solid lightgray;
+}
+
+.block-results {
+  border: 1px solid lightgray;
+  margin-top: -1px;
+  font-size: 14.625px;
+  font-family: monospace;
+}
+
+.block-results__output {
+  border-bottom: 1px solid lightgray;
+  padding: 0.3rem 0.5rem;
+  position: relative;
+  white-space: pre;
+}
+
+.block-results__output:before {
+  width: 8px;
+  top: 0;
+  height: 8px;
+  border-bottom-right-radius: 100%;
+  position: absolute;
+  content: '';
+  background-color: #e8e8e8;
+  display: block;
+  left: 0;
+}
+
+.block-results__output:after {
+  width: 10px;
+  border-width: 0 1px 1px 0;
+  top: 0;
+  height: 10px;
+  border: 1px solid #e8e8e8;
+  border-bottom-right-radius: 100%;
+  position: absolute;
+  content: '';
+  display: block;
+  left: 0;
+}
+
+.block-results__error {
+  font-size: 10pt;
+  line-height: 1.5;
+}
+
+.block-results__values {
+  padding: 0.3rem 0.5rem;
+}
+
+.block-results__error {
+  padding: 0.3rem 0.5rem;
+}
+
+.block-results__var {
+  color: deeppink;
+}
+
+.block-results__namespace {
+  color: dodgerblue;
+}
+
+.block-results__nil {
+  color: #3a3;
+}
+
+.block-results__number {
+  color: #3a3;
+}
+
+.block-results__string {
+  color: #a22;
+}
+
+.block-results__keyword {
+  color: #3a3;
+}
+
+.block-results__collection {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.stacktrace__exception {
+  color: red;
+}
+
+.stacktrace__frames {
+  margin-left: 2rem;
+}
+
+.stacktrace__clojure {
+  color: steelblue;
+}
+
+.stacktrace__java {
+  color: #aaa;
+}
+
+.cm-s-neat .CodeMirror-matchingbracket {
+  background-color: powderblue;
+  outline: none;
+}
