@@ -1,4 +1,5 @@
 (ns grapple.plot
+  {:grapple/scripts ["https://vega.github.io/vega/vega.min.js"]}
   (:require [grapple.render :refer [->Renderable]])
   (:import [java.util UUID]))
 
@@ -7,7 +8,6 @@
 (defn vega [spec]
   (->Renderable
     {:data (assoc spec :$schema "https://vega.github.io/schema/vega/v3.0.json")
-     :scripts ["https://vega.github.io/vega/vega.min.js"]
      :dom [:span]
      :update "new vega.View(vega.parse(data)).renderer('svg').initialize(node).run()"}))
 
@@ -20,7 +20,7 @@
                   {:scale :y :domain true :labels true :orient :left}]
            :scales [{:name :x :type :linear :nice true :zero true :range :width
                      :domain {:data id :field "x"}}
-                    {:name "y" :type :linear :nice true :zero true :range :height
+                    {:name :y :type :linear :nice true :zero true :range :height
                      :domain {:data id :field "y"}}]
            :marks [{:type :symbol :from {:data id}
                     :encode {:update {:x {:scale :x :field :x}
@@ -66,15 +66,25 @@
                                                       :size {:value 4}
                                                       :fill {:value :black}}}})])}))))
 
-(defn compose [& plots]
+(defn compose [plot & plots]
   (reduce
     (fn [acc plot]
-      (let [plot (get-in plot [:spec :data])]
+      (let [{:keys [data marks scales]} (get-in plot [:spec :data])]
         (update-in acc [:spec :data]
                    #(-> %
-                      (update :data conj (get-in plot [:data 0]))
-                      (update :marks conj (get-in plot [:marks 0]))))))
-    (update-in (first plots) [:spec :data] merge
-               {:autosize "none"
-                :padding {:top 10 :left 55 :bottom 40 :right 10}})
-    (rest plots)))
+                      (update :data concat data)
+                      (update :marks concat marks)
+                      (update :scales concat (remove (comp #{:x :y} :name) scales))))))
+    plot plots))
+
+(defn deep-merge [a b]
+  (cond
+    (and (map? a) (map? b)) (reduce
+                              (fn [acc [k v]]
+                                (update acc k deep-merge v))
+                              a b)
+    (and (sequential? a) (sequential? b)) (map deep-merge a b)
+    :else b))
+
+(defn modify [plot m]
+  (update-in plot [:spec :data] deep-merge m))

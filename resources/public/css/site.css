@@ -152,6 +152,9 @@ button {
   .block-results__var {
     color: deeppink;
   }
+  .block-results__namespace {
+    color: dodgerblue;
+  }
   .block-results__nil {
     color: #3a3;
   }

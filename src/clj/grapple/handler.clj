@@ -12,6 +12,7 @@
             [taoensso.sente.server-adapters.http-kit :refer [get-sch-adapter]]
             [taoensso.sente.packers.transit :as sente-transit]
             [grapple.middleware :refer [wrap-middleware]]
+            [grapple.namespace :refer [required]]
             [grapple.util :refer [spy]])
   (:import [java.io ByteArrayOutputStream]))
 
@@ -61,7 +62,15 @@
                          :session session-id
                          :id eval-id}))]
         (doseq [result results]
-          (send-fn uid [:eval/result {:eval-id eval-id :result result}]))))))
+          (send-fn uid [:eval/result {:eval-id eval-id :result result}])))
+      (doseq [req (required (edn/read-string code))
+              :let [[{:keys [value]}]
+                    (-> (nrepl/client conn Long/MAX_VALUE)
+                      (nrepl/message
+                        {:op :eval
+                         :code (pr-str `(get (meta (find-ns '~req)) :grapple/scripts))
+                         :session session-id}))]]
+        (send-fn uid [:scripts/load (edn/read-string value)])))))
 
 (defmethod event :clojure/interrupt [{:keys [send-fn uid ?data]}]
   (let [{:keys [session-id eval-id]} ?data]
@@ -122,8 +131,7 @@
   (when-not @nrepl-server
     (reset! nrepl-server (start-server
                            :port nrepl-port
-                           :handler (apply default-handler
-                                           (map resolve cider/cider-middleware))))
+                           :handler (apply default-handler (map resolve cider/cider-middleware))))
     (reset! nrepl-connection #(nrepl/connect :port nrepl-port))))
 
 (defn stop-notebook []

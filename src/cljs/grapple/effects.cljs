@@ -3,7 +3,6 @@
   (:require [clojure.string :as string]
             [cljs.reader :as edn]
             [re-frame.core :as rf]
-            [ajax.core :as http]
             [taoensso.sente :as sente]
             [taoensso.sente.packers.transit :as sente-transit]
             cljsjs.codemirror

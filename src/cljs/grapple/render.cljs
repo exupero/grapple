@@ -107,37 +107,28 @@
                      ^{:key i} [(render v)]))
       this)))
 
+(defrecord Ns [nm]
+  Renderable
+  (render [_]
+    (constant [:span.block-results__namespace (str "#namespace" nm)])))
+
 (defrecord Generic [spec]
   Renderable
   (render [_]
-    (let [{code :update :keys [scripts data]} spec
+    (let [{code :update :keys [data dom]} spec
           update-fn (if code
-                      (js/eval (str "(function(data,node){" code "})"))
+                      (js/eval (str "(function(node,data){" code "})"))
                       (constantly nil))
-          script-state (atom :not-loaded)
           updater (fn [this]
-                    (reset! script-state :loaded)
-                    (update-fn (clj->js data) (r/dom-node this)))
-          enqueue-callback (fn [this]
-                             (rf/dispatch [:scripts/callback
-                                           {:callback/scripts scripts
-                                            :callback/function #(updater this)}]))]
+                    (update-fn (r/dom-node this) (clj->js data)))]
       (r/create-class
         {:reagent-render
          (fn [_]
-           (condp = @script-state
-             :not-loaded nil
-             :loading [:div.loading-scripts "Loading scripts..."]
-             :loaded (walk/postwalk
-                       #(if (instance? Generic %)
-                          [(render %)] %)
-                       (spec :dom))))
-         :component-will-mount
-         (fn [_]
-           (when scripts
-             (reset! script-state :loading)
-             (rf/dispatch [:scripts/load scripts])))
+           (walk/postwalk
+             #(if (instance? Generic %)
+                [(render %)] %)
+             dom))
          :component-did-mount
-         enqueue-callback
+         updater
          :component-did-update
-         enqueue-callback}))))
+         updater}))))
