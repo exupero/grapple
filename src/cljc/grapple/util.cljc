@@ -3,6 +3,9 @@
 #?(:clj
     (defmacro spy [form]
       `(let [result# ~form]
-         (println (pr-str '~form) "=>")
-         (println (pr-str result#))
+         (js/console.log "%c%s => %c%o"
+           "color:mediumseagreen"
+           (pr-str '~form)
+           "color:black"
+           result#)
          result#)))

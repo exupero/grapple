@@ -58,11 +58,21 @@
   [:.modal__button {:margin-top (u/rem 0.5)
                     :float "right"
                     :display "inline-block"}]
-  [:.block {:position "relative"
+  [:.block {:position :relative
+            :display :block
             :margin-bottom (u/rem 0.5)
-            :z-index "0"}]
-  [:.block.block--active [:.CodeMirror {:border [[(u/px 1) "solid" "hotpink"]]}]]
-  [:.block.block--processing [:.CodeMirror-gutters {:background-color (hsl 120 93 83)}]]
+            :z-index "0"}
+   [:&:before {:position :absolute
+               :content "attr(data-abbr)"
+               :font-family "'PT Mono'"
+               :font-size (u/pt 8)
+               :color (hsl 0 0 75)
+               :top 0
+               :left (u/rem -2)
+               :width (u/rem 1.7)
+               :text-align :right}]]
+  [:.block--active [:.CodeMirror {:border [[(u/px 1) "solid" "hotpink"]]}]]
+  [:.block--processing [:.CodeMirror-gutters {:background-color (hsl 120 93 83)}]]
   [:.CodeMirror {:height "auto"
                  :line-height "1.5"
                  :border [[(u/px 1) "solid" "lightgray"]]}]

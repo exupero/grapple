@@ -3,81 +3,18 @@
   (:require [clojure.string :as string]
             [reagent.core :as r]
             [re-frame.core :as rf]
-            [markdown.core :refer [md->html]]
-            markdown.transformers
-            grapple.render))
+            grapple.render
+            [grapple.codemirror :refer [codemirror]]
+            [grapple.block :as block]))
 
-(defn codemirror [block]
-  (let [textarea (r/atom nil)]
-    (r/create-class
-      {:reagent-render
-       (fn [{:keys [block/content block/processing?]}]
-         [:div
-          [:textarea {:ref #(reset! textarea %)
-                      :default-value content
-                      :style {:display "none"}}]])
-       :component-did-mount
-       (fn [this]
-         (rf/dispatch [:codemirror/init block @textarea]))})))
-
-(defn code-result [{:keys [value result/evaled out class message stacktrace] :as result}]
-  (cond
-    stacktrace (grapple.render/->Stacktrace class message stacktrace)
-    evaled evaled
-    out (grapple.render/->Print out)
-    (and (string? value) (string/starts-with? value "#'")) (grapple.render/->VarName value)))
-
-(defn code-results [results]
-  [:div.block-results
-   (for [[field node] [[:out :div.block-results__output]
-                       [:value :div.block-results__values]
-                       [:stacktrace :div.block-results__error]]]
-     (when-let [values (seq (filter #(contains? % field) results))]
-       [node {:key field}
-        (for [[i result] (map-indexed vector values)]
-          [:div {:key i}
-           [(grapple.render/render (code-result result))]])]))])
-
-(def markdown-transformers
-  (remove #(= markdown.transformers/superscript %)
-          markdown.transformers/transformer-vector))
-
-(defn markdown [id content]
-  (let [rerender
-        (fn [node]
-          (js/MathJax.Hub.Queue #js ["Typeset" js/MathJax.Hub node])
-          (doseq [node (array-seq (.querySelectorAll node "a"))]
-            (.addEventListener node "click" #(.stopPropagation %))))]
-    (r/create-class
-      {:reagent-render
-       (fn [id content]
-         (let [html (md->html content :replacement-transformers markdown-transformers)]
-           [:div {:dangerouslySetInnerHTML {:__html html}
-                  :on-click #(rf/dispatch [:block/edit id])}]))
-       :component-did-mount
-       (fn [this]
-         (rerender (r/dom-node this)))
-       :component-did-update
-       (fn [this]
-         (rerender (r/dom-node this)))})))
-
-(defmulti block :block/type)
-
-(defmethod block :block-type/markdown [{:keys [block/id block/content block/active?] :as block}]
-  [:div.block.block--markdown
-   {:key id
-    :className (when active? "block--active")}
-   (if active?
-     [codemirror block]
-     [markdown id content])])
-
-(defmethod block :block-type/clojure [{:keys [block/id block/content block/results block/active? block/processing?] :as block}]
-  [:div.block.block--clojure
-   {:key id
-    :class (string/join " " [(when active? "block--active") (when processing? "block--processing")])}
-   ^{:key "code"} [codemirror block]
-   (when results
-     ^{:key "results"} [code-results results])])
+(defn classnames [m]
+  (transduce
+    (comp
+      (filter val)
+      (map key)
+      (map name)
+      (interpose " "))
+    str m))
 
 (defn modal [& body]
   [:div.modal
@@ -130,14 +67,20 @@
     (let [{:keys [flash/text flash/on?]} @(rf/subscribe [:page/flash])]
       [:div.flash
        {:key "flash"
-        :class (string/join " " [(when on? "flash--on")])}
+        :className (classnames {:flash--on on?})}
        [:div.flash__text text]])
     (when @(rf/subscribe [:page/show-save-modal?])
       ^{:key "save-modal"} [save-modal])
     (when @(rf/subscribe [:page/show-load-modal?])
       ^{:key "load-modal"} [load-modal])]
    [:div.blocks {:key "blocks"}
-    (for [{:keys [block/id] :as block-data} @(rf/subscribe [:page/blocks])]
-      (with-meta
-        (block block-data)
-        {:key id}))]])
+    (for [{t :block/type
+           :keys [block/id block/abbr block/active? block/processing?]
+           :as b} @(rf/subscribe [:page/blocks])]
+      [:div.block
+       {:key id
+        :className (classnames {(str "block--" (name t)) true
+                                :block--active active?
+                                :block--processing processing?})
+        :data-abbr abbr}
+       (block/render b)])]])

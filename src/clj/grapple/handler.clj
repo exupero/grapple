@@ -53,7 +53,7 @@
       first :new-session ?reply-fn)))
 
 (defmethod event :clojure/eval [{:keys [send-fn uid ?data]}]
-  (let [{:keys [code session-id eval-id]} ?data]
+  (let [{:keys [code session-id eval-id load-scripts?]} ?data]
     (with-open [conn (@nrepl-connection)]
       (let [results (-> (nrepl/client conn Long/MAX_VALUE)
                       (nrepl/message
@@ -62,15 +62,16 @@
                          :session session-id
                          :id eval-id}))]
         (doseq [result results]
-          (send-fn uid [:eval/result {:eval-id eval-id :result result}])))
-      (doseq [req (required (edn/read-string code))
-              :let [[{:keys [value]}]
-                    (-> (nrepl/client conn Long/MAX_VALUE)
-                      (nrepl/message
-                        {:op :eval
-                         :code (pr-str `(get (meta (find-ns '~req)) :grapple/scripts))
-                         :session session-id}))]]
-        (send-fn uid [:scripts/load (edn/read-string value)])))))
+          (send-fn uid [:clojure/result {:eval-id eval-id :result result}])))
+      (when load-scripts?
+        (doseq [req (required (edn/read-string code))
+                :let [[{:keys [value]}]
+                      (-> (nrepl/client conn Long/MAX_VALUE)
+                        (nrepl/message
+                          {:op :eval
+                           :code (pr-str `(get (meta (find-ns '~req)) :grapple/scripts))
+                           :session session-id}))]]
+          (send-fn uid [:scripts/load (edn/read-string value)]))))))
 
 (defmethod event :clojure/interrupt [{:keys [send-fn uid ?data]}]
   (let [{:keys [session-id eval-id]} ?data]

@@ -7,6 +7,7 @@
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [org.clojure/clojurescript "1.9.946" :scope "provided"]
                  [org.clojure/tools.nrepl "0.2.13"]
+                 [org.clojure/tools.reader "1.2.1"]
                  [ring "1.6.2"]
                  [ring-server "0.5.0"]
                  [ring/ring-defaults "0.3.1"]

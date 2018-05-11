@@ -116,11 +116,11 @@
   Renderable
   (render [_]
     (let [{code :update :keys [data dom]} spec
+          data (clj->js data)
           update-fn (if code
                       (js/eval (str "(function(node,data){" code "})"))
                       (constantly nil))
-          updater (fn [this]
-                    (update-fn (r/dom-node this) (clj->js data)))]
+          updater #(update-fn (r/dom-node %) data)]
       (r/create-class
         {:reagent-render
          (fn [_]

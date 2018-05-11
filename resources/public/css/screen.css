@@ -84,15 +84,28 @@ button {
 
 .block {
   position: relative;
+  display: block;
   margin-bottom: 0.5rem;
   z-index: 0;
 }
 
-.block.block--active .CodeMirror {
+.block:before {
+  width: 1.7rem;
+  top: 0;
+  font-family: 'PT Mono';
+  text-align: right;
+  position: absolute;
+  content: attr(data-abbr);
+  font-size: 8pt;
+  color: #bfbfbf;
+  left: -2rem;
+}
+
+.block--active .CodeMirror {
   border: 1px solid hotpink;
 }
 
-.block.block--processing .CodeMirror-gutters {
+.block--processing .CodeMirror-gutters {
   background-color: #abfcab;
 }
 

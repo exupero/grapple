@@ -1,7 +1,7 @@
 (ns grapple.nav
   (:require [clojure.zip :as zip]
             [re-frame.core :as rf]
-            cljsjs.codemirror))
+            [grapple.block.clojure :as clj]))
 
 (defn goto [loc pred]
   (loop [loc loc]
@@ -99,3 +99,56 @@
                            [k (assoc v :block/active? false)]))
                     blocks)))
     (assoc-in [:page/blocks id :block/active?] true)))
+
+;; Events
+
+(rf/reg-event-fx :nav/insert-new-before
+  [(rf/inject-cofx :generator/uuid)]
+  (insert-new-block
+    clj/block
+    (fn [ids id new-id]
+      (-> (zip/vector-zip ids)
+        (goto #(= id %))
+        (zip/insert-left new-id)
+        zip/root
+        vec))))
+
+(rf/reg-event-fx :nav/insert-new-after
+  [(rf/inject-cofx :generator/uuid)]
+  (insert-new-block
+    clj/block
+    (fn [ids id new-id]
+      (-> (zip/vector-zip ids)
+        (goto #(= id %))
+        (zip/insert-right new-id)
+        zip/root
+        vec))))
+
+(rf/reg-event-fx :nav/delete
+  (fn [{:keys [db]} [_ id]]
+    (when-not (get-in db [:page/blocks id :block/permanent?])
+      (let [move-to-block (or (block-after db id) (block-before db id))]
+        {:codemirror/focus {:focus/codemirror (:block/codemirror move-to-block)}
+         :db (-> db
+               (update :page/block-order #(vec (filter (partial not= id) %)))
+               (update :page/blocks dissoc id))}))))
+
+(rf/reg-event-db :nav/move-up
+  (fn [db [_ id]]
+    (update db :page/block-order
+            (fn [ids]
+              (-> (zip/vector-zip ids)
+                (goto #(= id %))
+                move-left
+                zip/root
+                vec)))))
+
+(rf/reg-event-db :nav/move-down
+  (fn [db [_ id]]
+    (update db :page/block-order
+            (fn [ids]
+              (-> (zip/vector-zip ids)
+                (goto #(= id %))
+                move-right
+                zip/root
+                vec)))))
