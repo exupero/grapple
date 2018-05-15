@@ -18,6 +18,9 @@
    :block/content ""
    :block/active? false})
 
+(defmethod b/create :block-type/markdown []
+  block)
+
 (defmethod b/convert :block-type/markdown [b _]
   (-> b
     (merge (dissoc block :block/content :block/active?))

@@ -4,6 +4,8 @@
             [re-frame.core :as rf]
             [cljs-uuid-utils.core :as uuid]))
 
+(defmulti create (fn [a] a))
+
 (defmulti convert (fn [_ t] t))
 
 ;; Components
@@ -40,4 +42,5 @@
 
 (rf/reg-fx :block/eval
   (fn [{:keys [eval/block-id eval/content eval/event-name]}]
-    (rf/dispatch [event-name block-id content])))
+    (rf/dispatch [event-name block-id content])
+    (rf/dispatch [:nav/ensure-focus-next block-id])))

@@ -1,9 +1,12 @@
 (ns grapple.block.clojurescript
+  (:require-macros [grapple.util :refer [spy]])
   (:require [re-frame.core :as rf]
             [cljs.tools.reader :refer [read-string]]
             [cljs.js :refer [empty-state eval js-eval]]
             [grapple.block :as b]
-            [grapple.codemirror :as cm]))
+            [grapple.codemirror :as cm]
+            [grapple.results :as r]
+            [grapple.serialization :refer [with-evaled]]))
 
 (def block
   {:block/type :block-type/clojurescript
@@ -13,11 +16,16 @@
    :block/content ""
    :block/active? false})
 
+(defmethod b/create :block-type/clojurescript []
+  block)
+
 (defmethod b/convert :block-type/clojurescript [b _]
   (merge b (dissoc block :block/content :block/active?)))
 
+(defonce state (empty-state))
+
 (defn eval-str [id code]
-  (eval (empty-state)
+  (eval state
         (read-string code)
         {:eval js-eval
          :source-map true
@@ -30,20 +38,21 @@
 (defmethod b/render :block-type/clojurescript [{:keys [block/results] :as b}]
   [:div
    [cm/codemirror b]
-   (when results [:div results])])
+   (when results [r/results results])])
 
 ;; Events
 
 (rf/reg-event-fx :clojurescript/eval
   (fn [{:keys [db]} [_ id content]]
     {:db (update-in db [:page/blocks id] merge
-                    {:block/content content})
+                    {:block/content content
+                     :block/results []})
      :clojurescript/eval {:eval/id id
                           :eval/code content}}))
 
 (rf/reg-event-db :clojurescript/result
   (fn [db [_ id result]]
-    (assoc-in db [:page/blocks id :block/results] result)))
+    (update-in db [:page/blocks id :block/results] conj (with-evaled result))))
 
 ;; Effects
 

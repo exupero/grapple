@@ -8,8 +8,7 @@
             [grapple.block :as block]
             [grapple.block.markdown :as md]
             [grapple.block.clojure :as clj]
-            [grapple.block.clojurescript :as cljs]
-            [grapple.nav :as nav]))
+            [grapple.block.clojurescript :as cljs]))
 
 (defn savable-blocks [{:keys [page/block-order page/blocks]}]
   (sequence
@@ -41,24 +40,6 @@
 (rf/reg-event-fx :scripts/loaded
   (fn [{:keys [db]} [_ scripts]]
     {:db (update db :scripts/loaded union (set scripts))}))
-
-(rf/reg-event-db :blocks/activate
-  (fn [db [_ id]]
-    (nav/activate db id)))
-
-(rf/reg-event-fx :blocks/focus-previous
-  (fn [{:keys [db]} [_ id pos]]
-    (let [{:keys [block/id block/codemirror]} (nav/block-before db id)]
-      {:codemirror/focus {:focus/codemirror codemirror
-                          :focus/position pos}
-       :db (nav/activate db id)})))
-
-(rf/reg-event-fx :blocks/focus-next
-  (fn [{:keys [db]} [_ id pos]]
-    (let [block-after (nav/block-after db id)]
-      {:codemirror/focus {:focus/codemirror (:block/codemirror block-after)
-                          :focus/position pos}
-       :db (nav/activate db (:block/id block-after))})))
 
 (rf/reg-event-fx :page/init
   [(rf/inject-cofx :generate/ns-name)

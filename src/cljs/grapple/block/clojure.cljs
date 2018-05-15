@@ -8,7 +8,7 @@
             [re-frame.core :as rf]
             [grapple.block :as b]
             [grapple.codemirror :as cm]
-            grapple.render
+            [grapple.results :as r]
             [grapple.serialization :refer [with-evaled]]))
 
 (def block
@@ -19,6 +19,9 @@
    :block/content ""
    :block/active? false})
 
+(defmethod b/create :block-type/clojure []
+  block)
+
 (defmethod b/convert :block-type/clojure [b _]
   (merge b (dissoc block :block/content :block/active?)))
 
@@ -26,30 +29,16 @@
 
 ;; Components
 
-(defn code-result [{:keys [value result/evaled out class message stacktrace] :as result}]
-  (cond
-    stacktrace (grapple.render/->Stacktrace class message stacktrace)
-    evaled evaled
-    out (grapple.render/->Print out)
-    (and (string? value) (string/starts-with? value "#'")) (grapple.render/->VarName value)))
-
-(defn code-results [results]
-  [:div.block-results
-   (for [[field node] [[:out :div.block-results__output]
-                       [:value :div.block-results__values]
-                       [:stacktrace :div.block-results__error]]]
-     (when-let [values (seq (filter #(contains? % field) results))]
-       [node {:key field}
-        (for [[i result] (map-indexed vector values)]
-          [:div {:key i}
-           [(grapple.render/render (code-result result))]])]))])
-
 (defmethod b/render :block-type/clojure [{:keys [block/results] :as b}]
   [:div
    [cm/codemirror b]
-   (when results [code-results results])])
+   (when results [r/results results])])
 
 ;; Events
+
+(rf/reg-event-fx :chsk/ws-ping
+  (fn [_ _]
+    {}))
 
 (rf/reg-event-fx :clojure/init-session
   (fn [_ _]
@@ -78,7 +67,7 @@
             db (assoc db :page/session-id (:session result))]
         (if (contains? (set (result :status)) "done")
           {:db (assoc-in db [:page/blocks block-id :block/processing?] false)}
-          {:db (update-in db [:page/blocks block-id :block/results] conj (update result :result with-evaled))})))))
+          {:db (update-in db [:page/blocks block-id :block/results] conj (with-evaled result))})))))
 
 (rf/reg-event-db :clojure/interrupted
   (fn [db [_ {:keys [eval-id]}]]
@@ -96,11 +85,10 @@
 
 (defmulti event-message-handler :id)
 
-(defmethod event-message-handler :chsk/ws-ping [_])
-(defmethod event-message-handler :chsk/state [_])
-
 (defmethod event-message-handler :chsk/handshake [_]
   (rf/dispatch [:clojure/init-session]))
+
+(defmethod event-message-handler :chsk/state [_])
 
 (defmethod event-message-handler :chsk/recv [{:keys [?data]}]
   (rf/dispatch ?data))

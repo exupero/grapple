@@ -72,7 +72,7 @@
   (fn [{:keys [codemirror/id codemirror/node codemirror/config
                codemirror/focus? codemirror/on-success]}]
     (let [cm (js/CodeMirror.fromTextArea node (clj->js config))]
-      (.on cm "focus" #(rf/dispatch [:blocks/activate id]))
+      (.on cm "focus" #(rf/dispatch [:nav/activate id]))
       (when focus?
         (.focus cm)
         (.setCursor cm (.lineCount cm) 0))

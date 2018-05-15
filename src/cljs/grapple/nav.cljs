@@ -1,6 +1,7 @@
 (ns grapple.nav
   (:require [clojure.zip :as zip]
             [re-frame.core :as rf]
+            [grapple.block :refer [create]]
             [grapple.block.clojure :as clj]))
 
 (defn goto [loc pred]
@@ -74,18 +75,17 @@
          zip/right
          node-or-nil)))
 
-(defn ensure-next-block [db id new-block-template new-uuid]
+(defn ensure-next-block [db id {new-block-id :block/id :as new-block}]
   (if-let [next-block (block-after db id)]
     db
-    (let [new-block (assoc new-block-template :block/id new-uuid :block/active? true)]
-      (-> db
-        (update :page/blocks assoc new-uuid new-block)
-        (update :page/block-order conj new-uuid)))))
+    (-> db
+      (update :page/blocks assoc new-block-id new-block)
+      (update :page/block-order conj new-block-id))))
 
-(defn insert-new-block [new-block-template f]
+(defn insert-new-block [new-block f]
   (fn [{:keys [db] generate-uuid :generator/uuid} [_ id]]
     (let [new-uuid (generate-uuid)
-          new-block (assoc new-block-template :block/id new-uuid :block/active? true)]
+          new-block (assoc new-block :block/id new-uuid :block/active? true)]
       {:db (-> db
              (update :page/blocks assoc new-uuid new-block)
              (update :page/block-order f id new-uuid))})))
@@ -101,6 +101,41 @@
     (assoc-in [:page/blocks id :block/active?] true)))
 
 ;; Events
+
+(rf/reg-event-db :nav/activate
+  (fn [db [_ id pos]]
+    (let [{:keys [block/id block/codemirror]} (get-in db [:page/blocks id])]
+      (activate db id))))
+
+(rf/reg-event-fx :nav/focus
+  (fn [{:keys [db]} [_ id pos]]
+    (let [{:keys [block/id block/codemirror]} (get-in db [:page/blocks id])]
+      {:codemirror/focus {:focus/codemirror codemirror
+                          :focus/position pos}
+       :db (activate db id)})))
+
+(rf/reg-event-fx :nav/focus-previous
+  (fn [{:keys [db]} [_ id pos]]
+    (let [{:keys [block/id]} (block-before db id)]
+      {:nav/focus {:focus/id id
+                   :focus/position pos}})))
+
+(rf/reg-event-fx :nav/focus-next
+  (fn [{:keys [db]} [_ id pos]]
+    (let [{:keys [block/id]} (block-after db id)]
+      {:nav/focus {:focus/id id
+                   :focus/position pos}})))
+
+(rf/reg-event-fx :nav/ensure-focus-next
+  [(rf/inject-cofx :generator/uuid)]
+  (fn [{:keys [db] generate-uuid :generator/uuid} [_ id pos]]
+    (let [block-type (get-in db [:page/blocks id :block/type])
+          new-block (assoc (create block-type) :block/id (generate-uuid))
+          db (ensure-next-block db id new-block)
+          {:keys [block/id]} (block-after db id)]
+      {:nav/focus {:focus/id id
+                      :focus/position pos}
+       :db db})))
 
 (rf/reg-event-fx :nav/insert-new-before
   [(rf/inject-cofx :generator/uuid)]
@@ -152,3 +187,9 @@
                 move-right
                 zip/root
                 vec)))))
+
+;; Effects
+
+(rf/reg-fx :nav/focus
+  (fn [{:keys [focus/id focus/position]}]
+    (rf/dispatch [:nav/focus id position])))
