@@ -46,9 +46,9 @@
    (rf/inject-cofx :generator/uuid)]
   (fn [{generated-ns-name :generated/ns-name generate-uuid :generator/uuid}
        [_ {:keys [init/tag-readers init/tag-writers] :as arg}]]
-    (let [blocks [(merge md/block
+    (let [blocks [(merge cljs/block
                          {:block/id (generate-uuid)
-                          :block/content "# My Grapple Notebook"})
+                          :block/content "#md \"# My Grapple Notebook\""})
                   (merge clj/block
                          {:block/id (generate-uuid)
                           :block/content (str "(ns " generated-ns-name "\n  (:require [grapple.plot :as plot]))")

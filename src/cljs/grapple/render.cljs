@@ -4,7 +4,8 @@
             [clojure.walk :as walk]
             [goog.string :refer [unescapeEntities]]
             [reagent.core :as r]
-            [re-frame.core :as rf]))
+            [re-frame.core :as rf]
+            [markdown.core :refer [md->html]]))
 
 (def nbsp (unescapeEntities "&nbsp;"))
 
@@ -12,6 +13,12 @@
   (r/create-class
     {:reagent-render
      (constantly form)}))
+
+(defn literal [form]
+  (r/create-class
+    {:reagent-render
+     (fn []
+       [:div {:ref #(when % (.appendChild % form))}])}))
 
 (defprotocol Renderable
   (render [_]))
@@ -64,6 +71,12 @@
   string
   (render [this]
     (constant [:span.block-results__string (pr-str this)]))
+  function
+  (render [this]
+    (constant [:span.block-results__function (pr-str this)]))
+  js/HTMLElement
+  (render [this]
+    (literal this))
   cljs.core/Keyword
   (render [this]
     (constant [:span.block-results__keyword (pr-str this)]))
@@ -111,6 +124,11 @@
   Renderable
   (render [_]
     (constant [:span.block-results__namespace (str "#namespace" nm)])))
+
+(defrecord Markdown [content]
+  Renderable
+  (render [_]
+    (constant [:div.block-results__markdown {:dangerouslySetInnerHTML {:__html (md->html content)}}])))
 
 (defrecord Generic [spec]
   Renderable

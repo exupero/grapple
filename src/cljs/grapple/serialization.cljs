@@ -8,7 +8,6 @@
 (defn with-evaled [{:keys [value] :as result}]
   (cond
     (nil? value) result
-    (number? value) (assoc result :result/evaled value)
     (string/starts-with? value "#'") result
     :else (assoc result :result/evaled (edn/read-string {:readers @tag-readers} value))))
 
