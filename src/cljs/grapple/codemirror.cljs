@@ -56,8 +56,7 @@
                          :codemirror/node node
                          :codemirror/focus? active?
                          :codemirror/on-success #(rf/dispatch [:block/codemirror id %])
-                         :codemirror/config {:lineNumbers true
-                                             :lineWrapping true
+                         :codemirror/config {:lineWrapping true
                                              :viewportMargin js/Infinity
                                              :matchBrackets true
                                              :autoCloseBrackets true

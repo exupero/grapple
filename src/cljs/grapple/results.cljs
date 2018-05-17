@@ -11,10 +11,10 @@
     (and (string? value) (string/starts-with? value "#'")) (r/->VarName value)))
 
 (defn results [rs]
-  [:div.block-results
-   (for [[field node] [[:out :div.block-results__output]
-                       [:value :div.block-results__values]
-                       [:stacktrace :div.block-results__error]]]
+  [:div.results
+   (for [[field node] [[:out :div.results__output]
+                       [:value :div.results__values]
+                       [:stacktrace :div.results__error]]]
      (when-let [values (seq (filter #(contains? % field) rs))]
        [node {:key field}
         (for [[i r] (map-indexed vector values)]

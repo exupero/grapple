@@ -7,7 +7,7 @@ h3 {
 }
 
 .body-container {
-  font-family: 'Helvetica Neue', Verdana, Helvetica, Arial, sans-serif;
+  font-family: 'PT Sans', Verdana, sans-serif;
   max-width: 800px;
   margin: 1rem auto;
   -webkit-font-smoothing: antialiased;
@@ -87,6 +87,10 @@ button {
   display: block;
   margin-bottom: 0.5rem;
   z-index: 0;
+  border: solid;
+  border-width: 0 0 0 1px;
+  border-color: #cccccc;
+  transition: border-color 0.2s;
 }
 
 .block:before {
@@ -101,35 +105,46 @@ button {
   left: -2rem;
 }
 
+.block .CodeMirror {
+  background-color: #f5f5f5;
+}
+
+.block--active {
+  border-color: #808080;
+}
+
 .block--active .CodeMirror {
-  border: 1px solid hotpink;
+  background-color: #f5f5f5;
 }
 
-.block--processing .CodeMirror-gutters {
-  background-color: #abfcab;
+.block--processing:after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background-color: #808080;
+  left: -2px;
+  width: 2px;
 }
 
-.CodeMirror {
-  height: auto;
-  line-height: 1.5;
-  border: 1px solid lightgray;
-}
-
-.block-results {
-  border: 1px solid lightgray;
+.results {
   margin-top: -1px;
-  font-size: 14.625px;
   font-family: monospace;
+  font-size: 14.625px;
 }
 
-.block-results__output {
+.results__markdown {
+  font-family: 'PT Sans';
+}
+
+.results__output {
   border-bottom: 1px solid lightgray;
   padding: 0.3rem 0.5rem;
   position: relative;
   white-space: pre;
 }
 
-.block-results__output:before {
+.results__output:before {
   width: 8px;
   top: 0;
   height: 8px;
@@ -141,7 +156,7 @@ button {
   left: 0;
 }
 
-.block-results__output:after {
+.results__output:after {
   width: 10px;
   border-width: 0 1px 1px 0;
   top: 0;
@@ -154,63 +169,56 @@ button {
   left: 0;
 }
 
-.block-results__error {
+.results__error {
   font-size: 10pt;
   line-height: 1.5;
 }
 
-.block-results__values {
+.results__values {
   padding: 0.3rem 0.5rem;
 }
 
-.block-results__error {
+.results__error {
   padding: 0.3rem 0.5rem;
 }
 
-.block-results__var {
+.results__var {
   color: deeppink;
 }
 
-.block-results__namespace {
+.results__namespace {
   color: dodgerblue;
 }
 
-.block-results__nil {
+.results__function {
+  color: dodgerblue;
+}
+
+.results__nil {
   color: #3a3;
 }
 
-.block-results__number {
+.results__number {
   color: #3a3;
 }
 
-.block-results__string {
+.results__string {
   color: #a22;
 }
 
-.block-results__keyword {
+.results__keyword {
   color: #3a3;
 }
 
-.block-results__collection {
+.results__collection {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
 }
 
-.stacktrace__exception {
-  color: red;
-}
-
-.stacktrace__frames {
-  margin-left: 2rem;
-}
-
-.stacktrace__clojure {
-  color: steelblue;
-}
-
-.stacktrace__java {
-  color: #aaa;
+.CodeMirror {
+  height: auto;
+  line-height: 1.5;
 }
 
 .cm-s-neat .CodeMirror-matchingbracket {

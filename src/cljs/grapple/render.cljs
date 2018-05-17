@@ -26,18 +26,18 @@
 (defrecord Print [s]
   Renderable
   (render [_]
-    (constant [:div.block-results__printed s])))
+    (constant [:div.results__printed s])))
 
 (defrecord VarName [s]
   Renderable
   (render [_]
-    (constant [:div.block-results__var s])))
+    (constant [:div.results__var s])))
 
 (defrecord Stacktrace [class message stacktrace]
   Renderable
   (render [_]
     (constant
-      [:div.block-results__stacktrace
+      [:div.results__stacktrace
        [:div.stacktrace__exception class ": " message]
        [:div.stacktrace__frames
         (for [[i frame] (map-indexed vector stacktrace)]
@@ -52,7 +52,7 @@
 
 (defn render-collection [[open-delim inter-delim close-delim] xf coll]
   (constant
-    [:span.block-results__collection
+    [:span.results__collection
      open-delim
      (sequence
        (comp
@@ -64,28 +64,28 @@
 (extend-protocol Renderable
   nil
   (render [_]
-    (constant [:span.block-results__nil "nil"]))
+    (constant [:span.results__nil "nil"]))
   number
   (render [this]
-    (constant [:span.block-results__number this]))
+    (constant [:span.results__number this]))
   string
   (render [this]
-    (constant [:span.block-results__string (pr-str this)]))
+    (constant [:span.results__string (pr-str this)]))
   function
   (render [this]
-    (constant [:span.block-results__function (pr-str this)]))
+    (constant [:span.results__function (pr-str this)]))
   js/HTMLElement
   (render [this]
     (literal this))
   cljs.core/Keyword
   (render [this]
-    (constant [:span.block-results__keyword (pr-str this)]))
+    (constant [:span.results__keyword (pr-str this)]))
   cljs.core/Symbol
   (render [this]
-    (constant [:span.block-results__symbol (pr-str this)]))
+    (constant [:span.results__symbol (pr-str this)]))
   cljs.core/EmptyList
   (render [this]
-    (constant [:span.block-results__collection "()"]))
+    (constant [:span.results__collection "()"]))
   cljs.core/List
   (render [this]
     (render-collection
@@ -123,12 +123,12 @@
 (defrecord Ns [nm]
   Renderable
   (render [_]
-    (constant [:span.block-results__namespace (str "#namespace" nm)])))
+    (constant [:span.results__namespace (str "#namespace" nm)])))
 
 (defrecord Markdown [content]
   Renderable
   (render [_]
-    (constant [:div.block-results__markdown {:dangerouslySetInnerHTML {:__html (md->html content)}}])))
+    (constant [:div.results__markdown {:dangerouslySetInnerHTML {:__html (md->html content)}}])))
 
 (defrecord Generic [spec]
   Renderable
