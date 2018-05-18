@@ -74,13 +74,10 @@
     (when @(rf/subscribe [:page/show-load-modal?])
       ^{:key "load-modal"} [load-modal])]
    [:div.blocks {:key "blocks"}
-    (for [{t :block/type
-           :keys [block/id block/abbr block/active? block/processing?]
+    (for [{:keys [block/id block/abbr block/active?]
            :as b} @(rf/subscribe [:page/blocks])]
       [:div.block
        {:key id
-        :className (classnames {(str "block--" (name t)) true
-                                :block--active active?
-                                :block--processing processing?})
+        :className (classnames {:block--active active?})
         :data-abbr abbr}
-       (block/render b)])]])
+       (block/block b)])]])

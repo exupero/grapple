@@ -1,8 +1,7 @@
 (ns grapple.effects
   (:require-macros [grapple.util :refer [spy]])
   (:require [re-frame.core :as rf]
-            [ajax.core :as ajax]
-            [grapple.serialization :refer [with-evaled]]))
+            [ajax.core :as ajax]))
 
 (rf/reg-fx :mathjax/init
   (fn [_]
@@ -55,11 +54,7 @@
   (fn [{:keys [load/filename load/on-success]}]
     (ajax/GET "/saved"
               {:params {:filename filename}
-               :handler (fn [blocks]
-                          (on-success
-                            (map (fn [{:keys [block/id block/results] :as block}]
-                                   (update block :block/results #(map with-evaled %)))
-                                 blocks)))})))
+               :handler on-success})))
 
 (rf/reg-fx :action/execute
   (fn [f]

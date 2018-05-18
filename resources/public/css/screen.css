@@ -8,10 +8,9 @@ h3 {
 
 .body-container {
   font-family: 'PT Sans', Verdana, sans-serif;
-  max-width: 800px;
-  margin: 1rem auto;
+  margin: 1rem 10rem;
   -webkit-font-smoothing: antialiased;
-  font-size: 1.125rem;
+  font-size: 10pt;
   line-height: 1.5rem;
   color: #333;
 }
@@ -22,13 +21,8 @@ pre {
   line-height: 1.5;
 }
 
-button {
-  padding: 0.5rem 0.8rem;
-  font-size: 12pt;
-  background: blue;
-  color: white;
-  border: none;
-  border-radius: 0.3rem;
+code {
+  font-family: Menlo, Consolas, monospace;
 }
 
 .flash {
@@ -67,13 +61,13 @@ button {
 }
 
 .modal {
-  background: lightgray;
+  background: #f5f5f5;
   position: fixed;
   width: 600px;
   margin: 0 100px;
   z-index: 1;
   padding: 1rem;
-  border: 1px solid gray;
+  border: 1px solid #d9d9d9;
 }
 
 .modal__button {
@@ -85,24 +79,12 @@ button {
 .block {
   position: relative;
   display: block;
-  margin-bottom: 0.5rem;
+  margin-bottom: 1rem;
   z-index: 0;
   border: solid;
   border-width: 0 0 0 1px;
-  border-color: #cccccc;
+  border-color: #d9d9d9;
   transition: border-color 0.2s;
-}
-
-.block:before {
-  width: 1.7rem;
-  top: 0;
-  font-family: 'PT Mono';
-  text-align: right;
-  position: absolute;
-  content: attr(data-abbr);
-  font-size: 8pt;
-  color: #bfbfbf;
-  left: -2rem;
 }
 
 .block .CodeMirror {
@@ -110,41 +92,36 @@ button {
 }
 
 .block--active {
-  border-color: #808080;
+  border-color: #999999;
 }
 
 .block--active .CodeMirror {
   background-color: #f5f5f5;
 }
 
-.block--processing:after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  background-color: #808080;
-  left: -2px;
-  width: 2px;
-}
-
 .results {
   margin-top: -1px;
-  font-family: monospace;
-  font-size: 14.625px;
+  font-size: 10pt;
 }
 
-.results__markdown {
+.result__loading {
   font-family: 'PT Sans';
+  color: #999999;
 }
 
-.results__output {
-  border-bottom: 1px solid lightgray;
+.result__markdown {
+  font-family: 'PT Sans';
+  font-size: 14pt;
+}
+
+.result__output {
+  border-bottom: 1px solid #f5f5f5;
   padding: 0.3rem 0.5rem;
   position: relative;
   white-space: pre;
 }
 
-.results__output:before {
+.result__output:before {
   width: 8px;
   top: 0;
   height: 8px;
@@ -156,7 +133,7 @@ button {
   left: 0;
 }
 
-.results__output:after {
+.result__output:after {
   width: 10px;
   border-width: 0 1px 1px 0;
   top: 0;
@@ -169,56 +146,65 @@ button {
   left: 0;
 }
 
-.results__error {
+.result__error {
   font-size: 10pt;
   line-height: 1.5;
 }
 
-.results__values {
+.result__values {
   padding: 0.3rem 0.5rem;
 }
 
-.results__error {
+.result__error {
   padding: 0.3rem 0.5rem;
 }
 
-.results__var {
+.result__object {
   color: deeppink;
 }
 
-.results__namespace {
-  color: dodgerblue;
+.result__atom {
+  color: deeppink;
 }
 
-.results__function {
-  color: dodgerblue;
-}
-
-.results__nil {
-  color: #3a3;
-}
-
-.results__number {
-  color: #3a3;
-}
-
-.results__string {
-  color: #a22;
-}
-
-.results__keyword {
-  color: #3a3;
-}
-
-.results__collection {
+.result__collection {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
 }
 
+.result__function {
+  color: deeppink;
+}
+
+.result__keyword {
+  color: #3a3;
+}
+
+.result__namespace {
+  color: deeppink;
+}
+
+.result__nil {
+  color: #3a3;
+}
+
+.result__number {
+  color: #3a3;
+}
+
+.result__string {
+  color: #a22;
+}
+
+.result__var {
+  color: deeppink;
+}
+
 .CodeMirror {
   height: auto;
   line-height: 1.5;
+  font-family: Menlo, Consolas, monospace;
 }
 
 .cm-s-neat .CodeMirror-matchingbracket {

@@ -9,9 +9,9 @@
     (str (rand-nth adj) "-" (rand-nth things))))
 
 (rf/reg-cofx
-  :generate/ns-name
+  :generator/ns-name
   (fn [cofx _]
-    (assoc cofx :generated/ns-name (generate-ns-name))))
+    (assoc cofx :generator/ns-name generate-ns-name)))
 
 (rf/reg-cofx
   :generator/uuid

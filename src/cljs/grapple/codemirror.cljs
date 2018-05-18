@@ -20,10 +20,7 @@
    "Ctrl-G Ctrl-B" #(rf/dispatch [:nav/insert-new-before id])
    "Ctrl-G Ctrl-D" #(rf/dispatch [:nav/move-down id])
    "Ctrl-G Ctrl-E" #(rf/dispatch [:page/save-as])
-   "Ctrl-G Ctrl-I" #(rf/dispatch [:block/type id :block-type/clojurescript])
-   "Ctrl-G Ctrl-J" #(rf/dispatch [:block/type id :block-type/clojure])
    "Ctrl-G Ctrl-L" #(rf/dispatch [:page/load])
-   "Ctrl-G Ctrl-M" #(rf/dispatch [:block/type id :block-type/markdown])
    "Ctrl-G Ctrl-N" #(rf/dispatch [:nav/insert-new-after id])
    "Ctrl-G Ctrl-S" #(rf/dispatch [:page/save])
    "Ctrl-G Ctrl-U" #(rf/dispatch [:nav/move-up id])
@@ -49,7 +46,7 @@
 
 (rf/reg-event-fx :codemirror/init
   (fn [{:keys [db]} [_ block node]]
-    (let [{:keys [block/id block/codemirror-mode block/eval-event block/active?]} block
+    (let [{:keys [block/id block/active?]} block
           extra-keys (clj->js (key-bindings id))]
       (js/CodeMirror.normalizeKeyMap extra-keys)
       {:codemirror/init {:codemirror/id id
@@ -60,7 +57,7 @@
                                              :viewportMargin js/Infinity
                                              :matchBrackets true
                                              :autoCloseBrackets true
-                                             :mode codemirror-mode
+                                             :mode "clojure"
                                              :theme "neat"
                                              :cursorHeight 0.9
                                              :extraKeys extra-keys}}})))

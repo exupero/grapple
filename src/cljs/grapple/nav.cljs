@@ -1,8 +1,13 @@
 (ns grapple.nav
   (:require [clojure.zip :as zip]
-            [re-frame.core :as rf]
-            [grapple.block :refer [create]]
-            [grapple.block.clojure :as clj]))
+            [cljs-uuid-utils.core :as uuid]
+            [re-frame.core :as rf]))
+
+(defn new-block []
+  {:block/id (uuid/make-random-uuid)
+   :block/content ""
+   :block/active? false
+   :block/results []})
 
 (defn goto [loc pred]
   (loop [loc loc]
@@ -26,20 +31,20 @@
 (defn cursor-up [id cm]
   (let [cursor (.getCursor cm)]
     (if (zero? (.-line cursor))
-      (rf/dispatch [:blocks/focus-previous id :line/default])
+      (rf/dispatch [:nav/focus-previous id :line/default])
       js/CodeMirror.Pass)))
 
 (defn cursor-down [id cm]
   (let [cursor (.getCursor cm)
         last-line (dec (.lineCount cm))]
     (if (= last-line (.-line cursor))
-      (rf/dispatch [:blocks/focus-next id :line/default])
+      (rf/dispatch [:nav/focus-next id :line/default])
       js/CodeMirror.Pass)))
 
 (defn cursor-left [id cm]
   (let [cursor (.getCursor cm)]
     (if (and (zero? (.-line cursor)) (zero? (.-ch cursor)))
-      (rf/dispatch [:blocks/focus-previous id :line/end])
+      (rf/dispatch [:nav/focus-previous id :line/end])
       js/CodeMirror.Pass)))
 
 (defn cursor-right [id cm]
@@ -48,7 +53,7 @@
         last-ch (.-length (.getLine cm last-line))]
     (if (and (= last-line (.-line cursor))
              (= last-ch (.-ch cursor)))
-      (rf/dispatch [:blocks/focus-next id :line/start])
+      (rf/dispatch [:nav/focus-next id :line/start])
       js/CodeMirror.Pass)))
 
 (defn current-word [cm]
@@ -60,7 +65,7 @@
     (zip/node loc)))
 
 (defn block-before [db id]
-  (get (:page/blocks db)
+  (get (db :page/blocks)
        (-> db :page/block-order
          zip/vector-zip
          (goto #(= id %))
@@ -68,7 +73,7 @@
          node-or-nil)))
 
 (defn block-after [db id]
-  (get (:page/blocks db)
+  (get (db :page/blocks)
        (-> db :page/block-order
          zip/vector-zip
          (goto #(= id %))
@@ -82,13 +87,13 @@
       (update :page/blocks assoc new-block-id new-block)
       (update :page/block-order conj new-block-id))))
 
-(defn insert-new-block [new-block f]
-  (fn [{:keys [db] generate-uuid :generator/uuid} [_ id]]
-    (let [new-uuid (generate-uuid)
-          new-block (assoc new-block :block/id new-uuid :block/active? true)]
+(defn insert-new-block [f]
+  (fn [{:keys [db] generate-empty-block :generator/empty-block} [_ id]]
+    (let [{new-id :block/id :as new-block} (generate-empty-block)]
       {:db (-> db
-             (update :page/blocks assoc new-uuid new-block)
-             (update :page/block-order f id new-uuid))})))
+             (update :page/blocks assoc new-id new-block)
+             (update :page/block-order f id new-id))
+       :nav/focus {:focus/id new-id}})))
 
 (defn activate [db id]
   (-> db
@@ -127,34 +132,30 @@
                    :focus/position pos}})))
 
 (rf/reg-event-fx :nav/ensure-focus-next
-  [(rf/inject-cofx :generator/uuid)]
-  (fn [{:keys [db] generate-uuid :generator/uuid} [_ id pos]]
-    (let [block-type (get-in db [:page/blocks id :block/type])
-          new-block (assoc (create block-type) :block/id (generate-uuid))
-          db (ensure-next-block db id new-block)
+  [(rf/inject-cofx :generator/empty-block)]
+  (fn [{:keys [db] generate-empty-block :generator/empty-block} [_ id pos]]
+    (let [db (ensure-next-block db id (generate-empty-block))
           {:keys [block/id]} (block-after db id)]
       {:nav/focus {:focus/id id
-                      :focus/position pos}
+                   :focus/position pos}
        :db db})))
 
 (rf/reg-event-fx :nav/insert-new-before
-  [(rf/inject-cofx :generator/uuid)]
+  [(rf/inject-cofx :generator/empty-block)]
   (insert-new-block
-    clj/block
     (fn [ids id new-id]
       (-> (zip/vector-zip ids)
-        (goto #(= id %))
+        (goto #{id})
         (zip/insert-left new-id)
         zip/root
         vec))))
 
 (rf/reg-event-fx :nav/insert-new-after
-  [(rf/inject-cofx :generator/uuid)]
+  [(rf/inject-cofx :generator/empty-block)]
   (insert-new-block
-    clj/block
     (fn [ids id new-id]
       (-> (zip/vector-zip ids)
-        (goto #(= id %))
+        (goto #{id})
         (zip/insert-right new-id)
         zip/root
         vec))))
@@ -193,3 +194,10 @@
 (rf/reg-fx :nav/focus
   (fn [{:keys [focus/id focus/position]}]
     (rf/dispatch [:nav/focus id position])))
+
+;; Co-effects
+
+(rf/reg-cofx
+  :generator/empty-block
+  (fn [cofx _]
+    (assoc cofx :generator/empty-block new-block)))

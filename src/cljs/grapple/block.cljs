@@ -1,16 +1,23 @@
 (ns grapple.block
   (:require-macros [grapple.util :refer [spy]])
   (:require [clojure.string :as string]
+            [cljs.reader :as edn]
             [re-frame.core :as rf]
-            [cljs-uuid-utils.core :as uuid]))
-
-(defmulti create (fn [a] a))
-
-(defmulti convert (fn [_ t] t))
+            [cljs-uuid-utils.core :as uuid]
+            [grapple.codemirror :as cm]
+            [grapple.render :as r]))
 
 ;; Components
 
-(defmulti render :block/type)
+(defn block [{:keys [block/results] :as b}]
+  [:div
+   [cm/codemirror b]
+   [:div.results
+    (when-let [values (seq (filter #(contains? % :value) results))]
+      [:div.result__values {:key :value}
+       (for [[i r] (map-indexed vector values)]
+         [:div {:key i}
+          [(-> r r/->renderable r/->component)]])])]])
 
 ;; Events
 
@@ -20,9 +27,7 @@
 
 (rf/reg-event-fx :block/eval
   (fn [{:keys [db]} [_ id content]]
-    {:block/eval {:eval/block-id id
-                  :eval/content content
-                  :eval/event-name (get-in db [:page/blocks id :block/eval-event])}}))
+    {:block/eval {:eval/block-id id :eval/content content}}))
 
 (rf/reg-event-fx :block/interrupt
   (fn [{:keys [db]} [_ id]]
@@ -34,13 +39,9 @@
   (fn [{:keys [db]} [_ id]]
     {:db (assoc-in db [:page/blocks id :block/active?] true)}))
 
-(rf/reg-event-db :block/type
-  (fn [db [_ id t]]
-    (update-in db [:page/blocks id] convert t)))
-
 ;; Effects
 
 (rf/reg-fx :block/eval
-  (fn [{:keys [eval/block-id eval/content eval/event-name]}]
-    (rf/dispatch [event-name block-id content])
+  (fn [{:keys [eval/block-id eval/content]}]
+    (rf/dispatch [:clojurescript/eval block-id content])
     (rf/dispatch [:nav/ensure-focus-next block-id])))

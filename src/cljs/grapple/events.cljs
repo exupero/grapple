@@ -3,12 +3,7 @@
   (:require [clojure.set :refer [difference union]]
             [clojure.string :as string]
             [clojure.zip :as zip]
-            [re-frame.core :as rf]
-            cljsjs.codemirror
-            [grapple.block :as block]
-            [grapple.block.markdown :as md]
-            [grapple.block.clojure :as clj]
-            [grapple.block.clojurescript :as cljs]))
+            [re-frame.core :as rf]))
 
 (defn savable-blocks [{:keys [page/block-order page/blocks]}]
   (sequence
@@ -42,19 +37,15 @@
     {:db (update db :scripts/loaded union (set scripts))}))
 
 (rf/reg-event-fx :page/init
-  [(rf/inject-cofx :generate/ns-name)
-   (rf/inject-cofx :generator/uuid)]
-  (fn [{generated-ns-name :generated/ns-name generate-uuid :generator/uuid}
+  [(rf/inject-cofx :generator/ns-name)
+   (rf/inject-cofx :generator/empty-block)]
+  (fn [{generate-ns-name :generator/ns-name generate-empty-block :generator/empty-block}
        [_ {:keys [init/tag-readers init/tag-writers] :as arg}]]
-    (let [blocks [(merge cljs/block
-                         {:block/id (generate-uuid)
-                          :block/content "#md \"# My Grapple Notebook\""})
-                  (merge clj/block
-                         {:block/id (generate-uuid)
-                          :block/content (str "(ns " generated-ns-name "\n  (:require [grapple.plot :as plot]))")
-                          :block/active? true
-                          :block/permanent? true
-                          :block/load-scripts? true})]]
+    (let [blocks [(merge (generate-empty-block)
+                         {:block/content "#md \"# My Grapple Notebook\""})
+                  (merge (generate-empty-block)
+                         {:block/content (str "#clj (ns " (generate-ns-name) "\n       (:require [grapple.plot :as plot]))")
+                          :block/active? true})]]
       {:tags/init {:tags/read-handlers tag-readers}
        :clojure/init {:ws/write-handlers tag-writers}
        :mathjax/init true
