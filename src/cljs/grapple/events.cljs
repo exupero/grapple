@@ -24,27 +24,14 @@
                  [k v])))
         blocks))
 
-(rf/reg-event-fx :scripts/load
-  (fn [{:keys [db]} [_ scripts]]
-    (let [to-load (difference (set scripts) (db :scripts/loaded))]
-      (when (seq to-load)
-        {:scripts/load {:load/scripts to-load
-                        :load/on-success #(rf/dispatch [:scripts/loaded to-load])
-                        :load/on-error #(js/console.error "Failed to load script" %)}}))))
-
-(rf/reg-event-fx :scripts/loaded
-  (fn [{:keys [db]} [_ scripts]]
-    {:db (update db :scripts/loaded union (set scripts))}))
-
 (rf/reg-event-fx :page/init
-  [(rf/inject-cofx :generator/ns-name)
-   (rf/inject-cofx :generator/empty-block)]
-  (fn [{generate-ns-name :generator/ns-name generate-empty-block :generator/empty-block}
+  [(rf/inject-cofx :generator/empty-block)]
+  (fn [{generate-empty-block :generator/empty-block}
        [_ {:keys [init/tag-readers init/tag-writers] :as arg}]]
     (let [blocks [(merge (generate-empty-block)
                          {:block/content "#md \"# My Grapple Notebook\""})
                   (merge (generate-empty-block)
-                         {:block/content (str "#clj (ns " (generate-ns-name) "\n       (:require [grapple.plot :as plot]))")
+                         {:block/content "(require '[grapple.plot :as plot])"
                           :block/active? true})]]
       {:tags/init {:tags/read-handlers tag-readers}
        :clojure/init {:ws/write-handlers tag-writers}
@@ -52,8 +39,7 @@
        :db {:page/session-id nil
             :page/flash {:flash/text "" :flash/on? false}
             :page/block-order (mapv :block/id blocks)
-            :page/blocks (into {} (map (juxt :block/id identity)) blocks)
-            :scripts/loaded #{}}})))
+            :page/blocks (into {} (map (juxt :block/id identity)) blocks)}})))
 
 (rf/reg-event-db :page/session-id
   (fn [db [_ session-id]]

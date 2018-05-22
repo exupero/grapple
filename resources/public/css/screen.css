@@ -102,6 +102,33 @@ code {
 .results {
   margin-top: -1px;
   font-size: 10pt;
+  padding: 0.3rem 0.5rem;
+}
+
+.result__atom {
+  color: deeppink;
+}
+
+.result__boolean {
+  color: blue;
+}
+
+.result__collection {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.result__error {
+  color: red;
+}
+
+.result__function {
+  color: deeppink;
+}
+
+.result__keyword {
+  color: #3a3;
 }
 
 .result__loading {
@@ -114,73 +141,6 @@ code {
   font-size: 14pt;
 }
 
-.result__output {
-  border-bottom: 1px solid #f5f5f5;
-  padding: 0.3rem 0.5rem;
-  position: relative;
-  white-space: pre;
-}
-
-.result__output:before {
-  width: 8px;
-  top: 0;
-  height: 8px;
-  border-bottom-right-radius: 100%;
-  position: absolute;
-  content: '';
-  background-color: #e8e8e8;
-  display: block;
-  left: 0;
-}
-
-.result__output:after {
-  width: 10px;
-  border-width: 0 1px 1px 0;
-  top: 0;
-  height: 10px;
-  border: 1px solid #e8e8e8;
-  border-bottom-right-radius: 100%;
-  position: absolute;
-  content: '';
-  display: block;
-  left: 0;
-}
-
-.result__error {
-  font-size: 10pt;
-  line-height: 1.5;
-}
-
-.result__values {
-  padding: 0.3rem 0.5rem;
-}
-
-.result__error {
-  padding: 0.3rem 0.5rem;
-}
-
-.result__object {
-  color: deeppink;
-}
-
-.result__atom {
-  color: deeppink;
-}
-
-.result__collection {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.result__function {
-  color: deeppink;
-}
-
-.result__keyword {
-  color: #3a3;
-}
-
 .result__namespace {
   color: deeppink;
 }
@@ -191,6 +151,10 @@ code {
 
 .result__number {
   color: #3a3;
+}
+
+.result__object {
+  color: deeppink;
 }
 
 .result__string {

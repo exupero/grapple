@@ -17,7 +17,6 @@
 (defn init! []
   (rf/dispatch-sync
     [:page/init
-     {:init/tag-readers {'namespace grapple.render/->VarNamespace
-                         'grapple.render.Renderable (comp grapple.render/->Generic :spec)}
-      :init/tag-writers {grapple.render/Generic (transit/write-handler (constantly "grapple.render.Renderable") identity)}}])
+     {:init/tag-readers {'namespace grapple.render/->VarNamespace}
+      :init/tag-writers {}}])
   (mount-root))

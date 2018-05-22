@@ -92,3 +92,15 @@
     (@chsk-send! [:clojure/stacktrace {:session-id session-id
                                        :eval-id eval-id
                                        :return return}])))
+
+(rf/reg-fx :clojurescript/load-dependency
+  (fn [{:keys [dependency/definition dependency/on-success]}]
+    (@chsk-send! [:clojurescript/dependency definition] 5000 on-success)))
+
+(rf/reg-fx :page/save
+  (fn [{:keys [save/filename save/blocks save/on-success]}]
+    (@chsk-send! [:page/save {:filename filename :blocks blocks}] 5000 on-success)))
+
+(rf/reg-fx :page/load
+  (fn [{:keys [load/filename load/on-success]}]
+    (@chsk-send! [:page/load {:filename filename}] 5000 on-success)))

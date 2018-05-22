@@ -1,5 +1,6 @@
 (ns grapple.handler
-  (:require [clojure.tools.nrepl :as nrepl]
+  (:require [clojure.java.io :as io]
+            [clojure.tools.nrepl :as nrepl]
             [clojure.tools.nrepl.server :refer [start-server stop-server default-handler]]
             [clojure.edn :as edn]
             [compojure.core :refer [GET POST routes]]
@@ -88,6 +89,14 @@
                          :session session-id}))]
         (doseq [result results]
           (send-fn uid [:clojure/stacktrace {:return return :result result}]))))))
+
+(defmethod event :clojurescript/dependency [{:keys [?reply-fn ?data]}]
+  (let [{:keys [path macros]} ?data
+        file (io/file (format "./src/hosted/%s.%s"
+                              path  (if macros "clj" "cljs")))]
+    (if (.exists file)
+      (?reply-fn {:lang :clj :source (slurp file)})
+      (?reply-fn nil))))
 
 (defmethod event :page/save [{:keys [?reply-fn ?data]}]
   (let [{:keys [filename blocks]} ?data]

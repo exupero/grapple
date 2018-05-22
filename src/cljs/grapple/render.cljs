@@ -8,8 +8,6 @@
             [re-frame.core :as rf]
             [markdown.core :refer [md->html]]))
 
-(declare ->renderable)
-
 (defonce tag-readers (atom nil))
 
 (def nbsp (unescapeEntities "&nbsp;"))
@@ -43,6 +41,9 @@
   nil
   (->component [_]
     (constant [:code.result__nil "nil"]))
+  boolean
+  (->component [this]
+    (constant [:code.result__boolean (pr-str this)]))
   number
   (->component [this]
     (constant [:code.result__number this]))
@@ -52,9 +53,6 @@
   function
   (->component [this]
     (constant [:code.result__function (pr-str this)]))
-  object
-  (->component [this]
-    (constant [:code.result__object (pr-str this)]))
   js/HTMLElement
   (->component [this]
     (literal this))
@@ -71,6 +69,13 @@
   (->component [this]
     (constant [:code.result__collection "()"]))
   cljs.core/List
+  (->component [this]
+    (collection
+      [\( nbsp \)]
+      (map-indexed (fn [i x]
+                     ^{:key i} [(->component x)]))
+      this))
+  cljs.core/LazySeq
   (->component [this]
     (collection
       [\( nbsp \)]
@@ -104,48 +109,10 @@
                      ^{:key i} [(->component v)]))
       this)))
 
-(def pending ::pending)
-
-(defrecord Cell [id value]
+(defrecord Error [msg]
   Renderable
   (->component [_]
-    (r/create-class
-      {:reagent-render
-       (fn []
-         (if (= pending value)
-           [:div.result__loading "Loading..."]
-           [(-> value ->renderable ->component)]))})))
-
-(defn cell
-  ([id] (->Cell id pending))
-  ([id value] (->Cell id value)))
-
-(defn update-cell [db block-id eval-id value]
-  (update-in db [:page/blocks block-id :block/results]
-             (partial walk/prewalk (fn [node]
-                                     (if (and (instance? Cell node) (= eval-id (:id node)))
-                                       (assoc node :value value) node)))))
-
-(defrecord Generic [spec]
-  Renderable
-  (->component [_]
-    (let [{code :update :keys [data dom]} spec
-          data (clj->js data)
-          update-fn (if code
-                      (js/eval (str "(function(node,data){" code "})"))
-                      (constantly nil))
-          updater #(update-fn (r/dom-node %) data)]
-      (r/create-class
-        {:reagent-render
-         (fn [_]
-           (walk/postwalk
-             #(if (instance? Generic %)
-                [(->component %)] %)
-             dom))
-         :component-did-mount
-         updater
-         :component-did-update
-         updater}))))
+    (constant [:span.result__error msg])))
 
 (defrecord Markdown [content]
   Renderable
@@ -205,12 +172,35 @@
   (->component [_]
     (constant [:code.result__namespace (str "#namespace" nm)])))
 
-(defn ->renderable [value]
+(defn ->renderable [{:keys [value error] :as cell}]
   (cond
+    error (->Error (.-message error))
     (nil? value) nil
     (and (string? value) (string/starts-with? value "#'")) (->VarName value)
     (string? value) (edn/read-string {:readers @tag-readers} value)
     :else value))
+
+(def pending ::pending)
+
+(defrecord Cell [id value]
+  Renderable
+  (->component [_]
+    (r/create-class
+      {:reagent-render
+       (fn []
+         (if (= pending value)
+           [:div.result__loading "Loading..."]
+           [(-> value ->renderable ->component)]))})))
+
+(defn cell
+  ([id] (->Cell id pending))
+  ([id value] (->Cell id value)))
+
+(defn update-cell [db block-id eval-id value]
+  (update-in db [:page/blocks block-id :block/results]
+             (partial walk/prewalk (fn [node]
+                                     (if (and (instance? Cell node) (= eval-id (:id node)))
+                                       (assoc node :value value) node)))))
 
 ;; Effects
 

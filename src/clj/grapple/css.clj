@@ -66,48 +66,24 @@
 
 (defstyles results
   [:.results {:margin-top (u/px -1)
-              :font-size (u/pt 10)}]
+              :font-size (u/pt 10)
+              :padding [[(u/rem 0.3) (u/rem 0.5)]]}]
+  [:.result__atom {:color :deeppink}]
+  [:.result__boolean {:color :blue}]
+  [:.result__collection {:display :flex
+                         :align-items :center
+                         :flex-wrap :wrap}]
+  [:.result__error {:color :red}]
+  [:.result__function {:color :deeppink}]
+  [:.result__keyword {:color "#3a3"}]
   [:.result__loading {:font-family "'PT Sans'"
                       :color gray-dark}]
   [:.result__markdown {:font-family "'PT Sans'"
                        :font-size (u/pt 14)}]
-  [:.result__output {:border-bottom [[(u/px 1) :solid gray-light]]
-                     :padding [[(u/rem 0.3) (u/rem 0.5)]]
-                     :position :relative
-                     :white-space :pre}]
-  [:.result__output:before {:content "''"
-                            :display :block
-                            :position :absolute
-                            :left 0
-                            :top 0
-                            :height (u/px 8)
-                            :width (u/px 8)
-                            :border-bottom-right-radius "100%"
-                            :background-color "#e8e8e8"}]
-  [:.result__output:after {:content "''"
-                           :display :block
-                           :position :absolute
-                           :left 0
-                           :top 0
-                           :height (u/px 10)
-                           :width (u/px 10)
-                           :border-bottom-right-radius "100%"
-                           :border [[(u/px 1) :solid "#e8e8e8"]]
-                           :border-width [[0 (u/px 1) (u/px 1) 0]]}]
-  [:.result__error {:font-size (u/pt 10)
-                    :line-height 1.5}]
-  [:.result__values {:padding [[(u/rem 0.3) (u/rem 0.5)]]}]
-  [:.result__error {:padding [[(u/rem 0.3) (u/rem 0.5)]]}]
-  [:.result__object {:color :deeppink}]
-  [:.result__atom {:color :deeppink}]
-  [:.result__collection {:display :flex
-                         :align-items :center
-                         :flex-wrap :wrap}]
-  [:.result__function {:color :deeppink}]
-  [:.result__keyword {:color "#3a3"}]
   [:.result__namespace {:color :deeppink}]
   [:.result__nil {:color "#3a3"}]
   [:.result__number {:color "#3a3"}]
+  [:.result__object {:color :deeppink}]
   [:.result__string {:color "#a22"}]
   [:.result__var {:color :deeppink}])
 

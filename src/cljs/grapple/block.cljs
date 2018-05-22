@@ -12,12 +12,10 @@
 (defn block [{:keys [block/results] :as b}]
   [:div
    [cm/codemirror b]
-   [:div.results
-    (when-let [values (seq (filter #(contains? % :value) results))]
-      [:div.result__values {:key :value}
-       (for [[i r] (map-indexed vector values)]
-         [:div {:key i}
-          [(-> r r/->renderable r/->component)]])])]])
+   (when-let [values (seq (filter #(contains? % :value) results))]
+     [:div.results
+      (for [[i r] (map-indexed vector values)]
+        [:div {:key i} [(r/->component r)]])])])
 
 ;; Events
 

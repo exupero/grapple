@@ -35,14 +35,22 @@
                 forms
                 (recur (conj forms {:cell-id cell-id :form form}))))))))))
 
-(defn eval-str [id code]
-  (doseq [{:keys [cell-id form]} (read-forms id code)]
+(defn load-dep [dep cb]
+  (rf/dispatch [:clojurescript/load-dependency dep cb]))
+
+(defn eval-str [block-id code]
+  (doseq [{:keys [cell-id form]} (read-forms block-id code)]
     (eval state
           form
           {:eval js-eval
            :source-map true
-           :context :expr}
-          #(rf/dispatch [:clojurescript/result id (render/cell cell-id (:value %))]))))
+           :context :expr
+           :load load-dep}
+          (fn [result]
+            (let [result (if (-> result :value meta :reagent)
+                           (update result :value render/->Reagent)
+                           result)]
+              (rf/dispatch [:clojurescript/result block-id (render/cell cell-id result)]))))))
 
 ;; Events
 
@@ -61,6 +69,11 @@
 (rf/reg-event-db :cell/update
   (fn [db [_ block-id cell-id value]]
     (render/update-cell db block-id cell-id value)))
+
+(rf/reg-event-fx :clojurescript/load-dependency
+  (fn [_ [_ dep cb]]
+    {:clojurescript/load-dependency {:dependency/definition dep
+                                     :dependency/on-success cb}}))
 
 ;; Effects
 
