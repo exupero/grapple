@@ -26,24 +26,18 @@
 
 (rf/reg-event-fx :page/init
   [(rf/inject-cofx :generator/empty-block)]
-  (fn [{generate-empty-block :generator/empty-block}
-       [_ {:keys [init/tag-readers init/tag-writers] :as arg}]]
+  (fn [{generate-empty-block :generator/empty-block} _]
     (let [blocks [(merge (generate-empty-block)
                          {:block/content "#md \"# My Grapple Notebook\""})
                   (merge (generate-empty-block)
                          {:block/content "(require '[grapple.plot :as plot])"
                           :block/active? true})]]
-      {:tags/init {:tags/read-handlers tag-readers}
-       :clojure/init {:ws/write-handlers tag-writers}
+      {:clojure/init true
        :mathjax/init true
-       :db {:page/session-id nil
-            :page/flash {:flash/text "" :flash/on? false}
+       :db {:page/flash {:flash/text "" :flash/on? false}
             :page/block-order (mapv :block/id blocks)
-            :page/blocks (into {} (map (juxt :block/id identity)) blocks)}})))
-
-(rf/reg-event-db :page/session-id
-  (fn [db [_ session-id]]
-    (assoc db :page/session-id session-id)))
+            :page/blocks (into {} (map (juxt :block/id identity)) blocks)
+            :page/cells {}}})))
 
 (rf/reg-event-fx :page/save
   (fn [{:keys [db]} _]
@@ -108,3 +102,7 @@
 (rf/reg-event-db :page/unflash
   (fn [db _]
     (assoc-in db [:page/flash :flash/on?] false)))
+
+(rf/reg-event-db :page/new-cell
+  (fn [db [_ id cell]]
+    (assoc-in db [:page/cells id] cell)))

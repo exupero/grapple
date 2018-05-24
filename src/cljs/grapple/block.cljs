@@ -9,13 +9,14 @@
 
 ;; Components
 
-(defn block [{:keys [block/results] :as b}]
+(defn block [{:keys [block/id block/active? block/content block/results] :as b}]
   [:div
-   [cm/codemirror b]
-   (when-let [values (seq (filter #(contains? % :value) results))]
+   [cm/codemirror id active? content]
+   (when (seq results)
      [:div.results
-      (for [[i r] (map-indexed vector values)]
-        [:div {:key i} [(r/->component r)]])])])
+      (for [{:keys [id] :as cell} results]
+        [:div {:key id}
+         [(r/->component cell)]])])])
 
 ;; Events
 
@@ -26,12 +27,6 @@
 (rf/reg-event-fx :block/eval
   (fn [{:keys [db]} [_ id content]]
     {:block/eval {:eval/block-id id :eval/content content}}))
-
-(rf/reg-event-fx :block/interrupt
-  (fn [{:keys [db]} [_ id]]
-    (when (get-in db [:page/blocks id :block/processing?])
-      {:clojure/interrupt {:interrupt/eval-id (uuid/uuid-string id)
-                           :interrupt/session-id (db :page/session-id)}})))
 
 (rf/reg-event-fx :block/edit
   (fn [{:keys [db]} [_ id]]

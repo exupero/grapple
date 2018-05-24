@@ -7,7 +7,7 @@ h3 {
 }
 
 .body-container {
-  font-family: 'PT Sans', Verdana, sans-serif;
+  font-family: 'PT Sans', sans-serif;
   margin: 1rem 10rem;
   -webkit-font-smoothing: antialiased;
   font-size: 10pt;
@@ -23,6 +23,27 @@ pre {
 
 code {
   font-family: Menlo, Consolas, monospace;
+}
+
+.cancel {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background-color: red;
+  position: relative;
+  margin-right: 5px;
+  cursor: pointer;
+}
+
+.cancel:after {
+  content: '×';
+  color: white;
+  position: absolute;
+  left: 0px;
+  right: 0;
+  top: -7px;
+  text-align: center;
 }
 
 .flash {
@@ -127,17 +148,28 @@ code {
   color: deeppink;
 }
 
+.result__interrupted {
+  font-family: 'PT Sans', sans-serif;
+  color: #999999;
+}
+
 .result__keyword {
   color: #3a3;
 }
 
 .result__loading {
-  font-family: 'PT Sans';
+  font-family: 'PT Sans', sans-serif;
   color: #999999;
 }
 
+.result__loading code {
+  background: #f5f5f5;
+  border-radius: 2px;
+  padding: 2px;
+}
+
 .result__markdown {
-  font-family: 'PT Sans';
+  font-family: 'PT Sans', sans-serif;
   font-size: 14pt;
 }
 

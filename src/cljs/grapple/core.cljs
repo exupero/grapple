@@ -15,8 +15,5 @@
   (r/render [grapple.views/page] (.getElementById js/document "app")))
 
 (defn init! []
-  (rf/dispatch-sync
-    [:page/init
-     {:init/tag-readers {'namespace grapple.render/->VarNamespace}
-      :init/tag-writers {}}])
+  (rf/dispatch-sync [:page/init])
   (mount-root))

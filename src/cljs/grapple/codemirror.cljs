@@ -16,7 +16,6 @@
    "Right" #(nav/cursor-right id %)
    "Shift-Enter" #(rf/dispatch [:block/eval id (.getValue %)])
    "Ctrl-Shift-Enter" #(rf/dispatch [:blocks/evaluate])
-   "Ctrl-C" #(rf/dispatch [:block/interrupt id])
    "Ctrl-G Ctrl-B" #(rf/dispatch [:nav/insert-new-before id])
    "Ctrl-G Ctrl-D" #(rf/dispatch [:nav/move-down id])
    "Ctrl-G Ctrl-E" #(rf/dispatch [:page/save-as])
@@ -29,25 +28,24 @@
 
 ;; Components
 
-(defn codemirror [block]
+(defn codemirror [id active? content]
   (let [textarea (r/atom nil)]
     (r/create-class
       {:reagent-render
-       (fn [{:keys [block/content]}]
+       (fn [_ _ content]
          [:div
           [:textarea {:ref #(reset! textarea %)
                       :default-value content
                       :style {:display "none"}}]])
        :component-did-mount
        (fn [this]
-         (rf/dispatch [:codemirror/init block @textarea]))})))
+         (rf/dispatch [:codemirror/init id active? @textarea]))})))
 
 ;; Events
 
 (rf/reg-event-fx :codemirror/init
-  (fn [{:keys [db]} [_ block node]]
-    (let [{:keys [block/id block/active?]} block
-          extra-keys (clj->js (key-bindings id))]
+  (fn [{:keys [db]} [_ id active? node]]
+    (let [extra-keys (clj->js (key-bindings id))]
       (js/CodeMirror.normalizeKeyMap extra-keys)
       {:codemirror/init {:codemirror/id id
                          :codemirror/node node

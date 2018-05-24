@@ -1,4 +1,4 @@
-(defproject org.exupero/grapple "0.1.0-SNAPSHOT"
+(defproject org.exupero/grapple "0.2.0-SNAPSHOT"
   :description "Grapple Notebook REPL"
   :url "https://github.com/exupero/grapple"
   :license {:name "Eclipse Public License"
@@ -18,7 +18,6 @@
                  [compojure "1.6.0"]
                  [hiccup "1.0.5"]
                  [yogthos/config "0.9"]
-                 [cljs-ajax "0.7.2"]
                  [com.cognitect/transit-clj "0.8.300"]
                  [com.cognitect/transit-cljs "0.8.243"]
                  [com.lucasbradstreet/cljs-uuid-utils "1.0.2"]

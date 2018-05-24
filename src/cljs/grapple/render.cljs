@@ -1,14 +1,9 @@
 (ns grapple.render
   (:require-macros [grapple.util :refer [spy]])
   (:require [clojure.string :as string]
-            [clojure.walk :as walk]
-            [cljs.reader :as edn]
             [goog.string :refer [unescapeEntities]]
             [reagent.core :as r]
-            [re-frame.core :as rf]
             [markdown.core :refer [md->html]]))
-
-(defonce tag-readers (atom nil))
 
 (def nbsp (unescapeEntities "&nbsp;"))
 
@@ -171,39 +166,3 @@
   Renderable
   (->component [_]
     (constant [:code.result__namespace (str "#namespace" nm)])))
-
-(defn ->renderable [{:keys [value error] :as cell}]
-  (cond
-    error (->Error (.-message error))
-    (nil? value) nil
-    (and (string? value) (string/starts-with? value "#'")) (->VarName value)
-    (string? value) (edn/read-string {:readers @tag-readers} value)
-    :else value))
-
-(def pending ::pending)
-
-(defrecord Cell [id value]
-  Renderable
-  (->component [_]
-    (r/create-class
-      {:reagent-render
-       (fn []
-         (if (= pending value)
-           [:div.result__loading "Loading..."]
-           [(-> value ->renderable ->component)]))})))
-
-(defn cell
-  ([id] (->Cell id pending))
-  ([id value] (->Cell id value)))
-
-(defn update-cell [db block-id eval-id value]
-  (update-in db [:page/blocks block-id :block/results]
-             (partial walk/prewalk (fn [node]
-                                     (if (and (instance? Cell node) (= eval-id (:id node)))
-                                       (assoc node :value value) node)))))
-
-;; Effects
-
-(rf/reg-fx :tags/init
-  (fn [{:keys [tags/read-handlers]}]
-    (reset! tag-readers read-handlers)))

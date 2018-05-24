@@ -27,11 +27,11 @@
                     {:name :y :type :linear :nice true :zero true :range :height
                      :domain {:data id :field "y"}}]
            :marks [{:type :symbol :from {:data id}
-                    :encode {:update {:x {:scale :x :field :x}
-                                      :y {:scale :y :field :y}
-                                      :size {:value 100}
-                                      :shape {:value :circle}
-                                      :fill {:value :steelblue}}}}]})))
+                    :encode {:enter {:x {:scale :x :field :x}
+                                     :y {:scale :y :field :y}
+                                     :size {:value 100}
+                                     :shape {:value :circle}
+                                     :fill {:value :steelblue}}}}]})))
 
 (defn contour
   ([pairs] (contour pairs nil))

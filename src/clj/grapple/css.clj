@@ -4,12 +4,17 @@
             [garden.units :as u]))
 
 ; Fonts
+
+(def sans-serif ["'PT Sans'" "sans-serif"])
 (def monospace ["Menlo" "Consolas" "monospace"])
 
 ; Colors
+
 (def gray-dark (hsl 0 0 60))
 (def gray-medium (hsl 0 0 85))
 (def gray-light (hsl 0 0 96))
+
+; Styles
 
 (defstyles flash
   [:.flash {:pointer-events :none
@@ -17,8 +22,8 @@
             :width (u/px 600)
             :margin [[0 (u/px 100)]]
             :font-weight :bold
-            :color :steelblue
             :font-size (u/pt 16)
+            :color :steelblue
             :display :flex
             :justify-content :center
             :z-index 2
@@ -75,10 +80,15 @@
                          :flex-wrap :wrap}]
   [:.result__error {:color :red}]
   [:.result__function {:color :deeppink}]
+  [:.result__interrupted {:font-family sans-serif
+                          :color gray-dark}]
   [:.result__keyword {:color "#3a3"}]
-  [:.result__loading {:font-family "'PT Sans'"
-                      :color gray-dark}]
-  [:.result__markdown {:font-family "'PT Sans'"
+  [:.result__loading {:font-family sans-serif
+                      :color gray-dark}
+   [:code {:background gray-light
+           :border-radius (u/px 2)
+           :padding (u/px 2)}]]
+  [:.result__markdown {:font-family sans-serif
                        :font-size (u/pt 14)}]
   [:.result__namespace {:color :deeppink}]
   [:.result__nil {:color "#3a3"}]
@@ -103,7 +113,7 @@
 (defstyles screen
   [:h1 {:font-size (u/pt 20)}]
   [:h3 {:margin 0}]
-  [:.body-container {:font-family ["'PT Sans'" "Verdana" "sans-serif"]
+  [:.body-container {:font-family sans-serif
                      :margin [[(u/rem 1) (u/rem 10)]]
                      :-webkit-font-smoothing :antialiased
                      :font-size (u/pt 10)
@@ -113,6 +123,21 @@
          :white-space :pre-wrap
          :line-height 1.5}]
   [:code {:font-family monospace}]
+  [:.cancel {:display :inline-block
+             :width (u/px 9)
+             :height (u/px 9)
+             :border-radius (u/percent 50)
+             :background-color :red
+             :position :relative
+             :margin-right (u/px 5)
+             :cursor :pointer}
+   [:&:after {:content "'\u00d7'"
+              :color :white
+              :position :absolute
+              :left (u/px 0)
+              :right 0
+              :top (u/px -7)
+              :text-align :center}]]
   flash
   modal
   block
