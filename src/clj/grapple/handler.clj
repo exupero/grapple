@@ -19,23 +19,17 @@
 
 (declare nrepl-connection)
 
-(def mount-target
-  [:div#app [:h3 "Loading..."]])
-
-(defn head []
-  [:head
-   [:meta {:charset "utf-8"}]
-   [:meta {:name "viewport"
-           :content "width=device-width, initial-scale=1"}]
-   (include-css "/css/jslib/codemirror-5.3.0.css")
-   (include-css "/css/jslib/codemirror-themes/neat.css")
-   (include-css "/css/screen.css")])
-
 (defn notebook-page []
   (html5
-    (head)
-    [:body {:class "body-container"}
-     mount-target
+    [:head
+     [:meta {:charset "utf-8"}]
+     [:meta {:name "viewport"
+             :content "width=device-width, initial-scale=1"}]
+     (include-css "/css/jslib/codemirror-5.3.0.css")
+     (include-css "/css/jslib/codemirror-themes/neat.css")
+     (include-css "/css/screen.css")]
+    [:body
+     [:div#app [:div.loading "Loading..."]]
      (include-js "//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML")
      (include-js "/js/app.js")]))
 

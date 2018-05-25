@@ -3,17 +3,14 @@
   (:require [clojure.set :refer [difference union]]
             [clojure.string :as string]
             [clojure.zip :as zip]
-            [re-frame.core :as rf]))
+            [re-frame.core :as rf]
+            [grapple.cell :as cell]))
 
-(defn savable-blocks [{:keys [page/block-order page/blocks]}]
+(defn savable-blocks [{:keys [page/block-order page/blocks page/cells]}]
   (sequence
     (comp
       (map blocks)
-      (map #(dissoc % :block/codemirror))
-      (map (fn [x]
-             (update x :block/results
-                     (fn [results]
-                       (map #(dissoc % :result/evaled) results))))))
+      (map #(dissoc % :block/codemirror :block/results)))
     block-order))
 
 (defn update-block-contents [blocks]
@@ -21,7 +18,7 @@
         (map (fn [[k {:keys [block/codemirror] :as v}]]
                (if codemirror
                  [k (assoc v :block/content (.getValue codemirror))]
-                 [k v])))
+                 [k nil])))
         blocks))
 
 (rf/reg-event-fx :page/init
@@ -47,7 +44,7 @@
                      :save/blocks (savable-blocks db)
                      :save/on-success (fn []
                                         (rf/dispatch [:page/flash (str "Saved " filename)])
-                                        (rf/dispatch [:page/hide-save-modal]))}}
+                                        (rf/dispatch [:page/hide-modal]))}}
         {:db (assoc db :page/show-save-modal? true)}))))
 
 (rf/reg-event-db :page/save-as
@@ -63,7 +60,7 @@
                    :save/blocks (savable-blocks db)
                    :save/on-success (fn []
                                       (rf/dispatch [:page/flash (str "Saved " filename)])
-                                      (rf/dispatch [:page/hide-save-modal]))}
+                                      (rf/dispatch [:page/hide-modal]))}
        :db (assoc db :page/filename filename)})))
 
 (rf/reg-event-db :page/load
@@ -75,8 +72,13 @@
     {:page/load {:load/filename filename
                  :load/on-success (fn [blocks]
                                     (rf/dispatch [:page/flash (str "Loaded " filename)])
+                                    (rf/dispatch [:page/loaded filename])
                                     (rf/dispatch [:page/load-blocks blocks])
-                                    (rf/dispatch [:page/hide-load-modal]))}}))
+                                    (rf/dispatch [:page/hide-modal]))}}))
+
+(rf/reg-event-db :page/loaded
+  (fn [db [_ filename]]
+    (assoc db :page/filename filename)))
 
 (rf/reg-event-db :page/load-blocks
   (fn [db [_ blocks]]
@@ -86,13 +88,11 @@
                               (map (juxt :block/id identity))
                               blocks))))
 
-(rf/reg-event-db :page/hide-save-modal
+(rf/reg-event-db :modal/hide
   (fn [db _]
-    (assoc db :page/show-save-modal? false)))
-
-(rf/reg-event-db :page/hide-load-modal
-  (fn [db _]
-    (assoc db :page/show-load-modal? false)))
+    (assoc db
+           :page/show-save-modal? false
+           :page/show-load-modal? false)))
 
 (rf/reg-event-fx :page/flash
   (fn [{:keys [db]} [_ text]]

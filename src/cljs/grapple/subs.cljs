@@ -9,14 +9,7 @@
     (map
       (fn [block-id]
         (-> (blocks block-id)
-          (update :block/results
-                  (fn [cell-ids]
-                    (walk/prewalk
-                      (fn [node]
-                        (if (instance? cell/Cell node)
-                          (get cells (:id node))
-                          node))
-                      (map cells cell-ids))))))
+          (update :block/results (partial cell/build-results cells))))
       block-order)))
 
 (rf/reg-sub :page/show-save-modal?

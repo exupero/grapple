@@ -1,6 +1,6 @@
 (ns grapple.css
   (:require [garden.def :refer [defstyles]]
-            [garden.color :as color :refer [hsl]]
+            [garden.color :as color :refer [hsl hsla]]
             [garden.units :as u]))
 
 ; Fonts
@@ -10,6 +10,8 @@
 
 ; Colors
 
+(def gray-darkest (hsl 0 0 20))
+(def gray-darker (hsl 0 0 40))
 (def gray-dark (hsl 0 0 60))
 (def gray-medium (hsl 0 0 85))
 (def gray-light (hsl 0 0 96))
@@ -19,14 +21,11 @@
 (defstyles flash
   [:.flash {:pointer-events :none
             :position :fixed
-            :width (u/px 600)
-            :margin [[0 (u/px 100)]]
+            :margin [[(u/rem 0) (u/rem 1)]]
             :font-weight :bold
             :font-size (u/pt 16)
-            :color :steelblue
-            :display :flex
-            :justify-content :center
-            :z-index 2
+            :color gray-dark
+            :z-index 1
             :opacity 0
             :-webkit-opacity 0
             :-moz-opacity 0
@@ -41,22 +40,34 @@
                 :-ms-opacity 1}]
   [:.flash__text {:border-radius (u/rem 2)
                   :border [[(u/px 1) :solid (hsl 207 44 75)]]
-                  :padding [[(u/rem 0.3) (u/rem 2)]]
+                  :padding [[(u/rem 0.3) (u/rem 0.9)]]
                   :background-color :white}])
 
 (defstyles modal
-  [:.modal {:background gray-light
-            :position :fixed
-            :width (u/px 600)
-            :margin [[0 (u/px 100)]]
-            :z-index 1
-            :padding (u/rem 1)
-            :border [[(u/px 1) :solid gray-medium]]}]
+  [:.modal-container {:position :fixed
+                      :z-index 1
+                      :left 0
+                      :top 0
+                      :right 0
+                      :bottom 0
+                      :background-color (hsla 0 0 20 0.2)
+                      :display :flex
+                      :justify-content :center
+                      :align-items :center}]
+  [:.modal {:width (u/percent 50)
+            :background gray-light
+            :border-radius (u/rem 1)
+            :box-shadow [[0 0 (u/px 12) (hsla 0 0 0 0.4)]]
+            :box-sizing :border-box
+            :padding (u/rem 2)}]
+  [:.modal__input {:width (u/percent 100)
+                   :box-sizing :border-box}]
   [:.modal__button {:margin-top (u/rem 0.5)
                     :float :right
                     :display :inline-block}])
 
 (defstyles block
+  [:.blocks {:margin [[(u/rem 1) (u/rem 20) (u/rem 10) (u/rem 10)]]}]
   [:.block {:position :relative
             :display :block
             :margin-bottom (u/rem 1)
@@ -111,18 +122,28 @@
                                               :outline :none}]])
 
 (defstyles screen
+  [:body {:font-family sans-serif
+          :margin 0
+          :font-size (u/pt 11)
+          :line-height (u/rem 1.5)
+          :color gray-darkest
+          :-webkit-font-smoothing :antialiased}]
   [:h1 {:font-size (u/pt 20)}]
   [:h3 {:margin 0}]
-  [:.body-container {:font-family sans-serif
-                     :margin [[(u/rem 1) (u/rem 10)]]
-                     :-webkit-font-smoothing :antialiased
-                     :font-size (u/pt 10)
-                     :line-height (u/rem 1.5)
-                     :color "#333"}]
   [:pre {:margin 0
          :white-space :pre-wrap
          :line-height 1.5}]
   [:code {:font-family monospace}]
+  [:input {:font-size (u/pt 16)
+           :font-family sans-serif
+           :padding [[(u/rem 0.5) (u/rem 0.6)]]
+           :border [[(u/px 1) :solid gray-dark]]}]
+  [:button {:font-size (u/pt 16)
+            :padding [[(u/rem 0.5) (u/rem 0.6)]]
+            :background-color (hsl 240 80 65)
+            :color :white
+            :border-width 0
+            :border-radius (u/rem 0.5)}]
   [:.cancel {:display :inline-block
              :width (u/px 9)
              :height (u/px 9)
@@ -138,6 +159,8 @@
               :right 0
               :top (u/px -7)
               :text-align :center}]]
+  [:.loading {:font-size (u/pt 16)
+              :margin [[(u/rem 1) (u/rem 20) (u/rem 1) (u/rem 10)]]}]
   flash
   modal
   block

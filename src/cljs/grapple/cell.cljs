@@ -1,5 +1,6 @@
 (ns grapple.cell
-  (:require [cljs-uuid-utils.core :as uuid]
+  (:require [clojure.walk :as walk]
+            [cljs-uuid-utils.core :as uuid]
             [reagent.core :as r]
             [re-frame.core :as rf]
             [grapple.render :refer [Renderable ->Error ->component]]))
@@ -45,3 +46,11 @@
                (if (= source (-> cell :opts :source))
                  (assoc cell :value value)
                  cell))))
+
+(defn build-results [cells cell-ids]
+  (walk/prewalk
+    (fn [node]
+      (if (instance? Cell node)
+        (get cells (:id node))
+        node))
+    (map cells cell-ids)))

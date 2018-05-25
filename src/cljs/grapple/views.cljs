@@ -17,23 +17,30 @@
     str m))
 
 (defn modal [& body]
-  [:div.modal
-   (for [[i child] (map-indexed vector body)]
-     (with-meta child {:key i}))])
+  [:div.modal-container
+   [:div.modal
+    {:on-key-down #(when (= "Escape" (.-key %))
+                     (rf/dispatch [:modal/hide]))}
+    (for [[i child] (map-indexed vector body)]
+      (with-meta child {:key i}))]])
+
+(defn handle-enter [f]
+  (fn [e]
+    (when (= "Enter" (.-key e))
+      (f (.. e -target -value)))))
 
 (defn save-modal []
   (let [input (r/atom nil)
-        submit (fn [value]
-                 (rf/dispatch [:page/save-to-filename value]))]
+        submit #(rf/dispatch [:page/save-to-filename %])]
     (r/create-class
       {:reagent-render
        (fn []
          [modal
-          [:input
+          [:input.modal__input
            {:ref #(reset! input %)
-            :type "text"
-            :on-key-up #(when (= "Enter" (.-key %))
-                          (submit (.. % -target -value)))}]
+            :type :text
+            :placeholder "Filename"
+            :on-key-up  (handle-enter submit)}]
           [:button.modal__button
            {:on-click #(submit (.-value @input))}
            "Save Notebook"]])
@@ -49,17 +56,27 @@
       {:reagent-render
        (fn []
          [modal
-          [:input
+          [:input.modal__input
            {:ref #(reset! input %)
-            :type "text"
-            :on-key-up #(when (= "Enter" (.-key %))
-                          (submit (.. % -target -value)))}]
+            :type :text
+            :placeholder "Filename"
+            :on-key-up (handle-enter submit)}]
           [:button.modal__button
            {:on-click #(submit (.-value @input))}
            "Load Notebook"]])
        :component-did-mount
        (fn [this]
          (.focus @input))})))
+
+(defn blocks []
+  [:div.blocks
+   (for [{:keys [block/id block/abbr block/active?]
+          :as b} @(rf/subscribe [:page/blocks])]
+     [:div.block
+      {:key id
+       :className (classnames {:block--active active?})
+       :data-abbr abbr}
+      (block/block b)])])
 
 (defn page []
   [:div
@@ -73,11 +90,4 @@
       ^{:key "save-modal"} [save-modal])
     (when @(rf/subscribe [:page/show-load-modal?])
       ^{:key "load-modal"} [load-modal])]
-   [:div.blocks {:key "blocks"}
-    (for [{:keys [block/id block/abbr block/active?]
-           :as b} @(rf/subscribe [:page/blocks])]
-      [:div.block
-       {:key id
-        :className (classnames {:block--active active?})
-        :data-abbr abbr}
-       (block/block b)])]])
+   [blocks]])
